@@ -56,7 +56,8 @@ La arquitectura del sistema estará implementada mediante una estructura en capa
 - Módulo de gestión de reportes de sesión clínica  
 - Módulo de gestión de documentos clínicos  
 - Módulo de supervisión  
-- Módulo de auditoría  
+- Módulo de auditoría
+- **Capa Anti-Corrupción (ACL)** — componente lateral que traduce el modelo externo (módulo de agenda) al modelo interno del dominio clínico
 
 **Responsabilidades:**
 - Implementar las reglas de negocio del sistema  
@@ -68,7 +69,8 @@ La arquitectura del sistema estará implementada mediante una estructura en capa
 - Gestionar el proceso de revisión de reportes (aprobación, observación, rechazo)  
 - Generar y persistir los registros de auditoría con resultado `PERMITIDO` o `DENEGADO` tras cada operación evaluada  
 - Exponer servicios mediante API REST para el consumo del frontend  
-- Coordinar la interacción con la capa de acceso a datos  
+- Coordinar la interacción con la capa de acceso a datos
+- **ACL:** extraer la identidad del usuario del JWT, traducir DTOs externos a objetos de dominio, y mantener la proyección local de asignaciones sincronizada con el módulo de agenda
 
 ---
 
@@ -123,9 +125,28 @@ El flujo de comunicación del sistema se define de la siguiente manera:
 El flujo de operación del sistema está representado en el siguiente esquema:
 
 ```
-Controller → Service → Repository → Base de datos
-                 ↓
+                         ┌─ ACL ─────────────────────────────┐
+                         │  JwtContextAdapter                 │
+                         │  AgendaModuleClient                │
+                         │  PacienteTranslator                │
+                         │  TerapeutaTranslator               │
+                         └───────────────┬───────────────────┘
+                                         │ identidad + objetos de dominio
+                                         ▼
+Controller → Service ────────────────────┤
+                  │                      │
+                  │              Repository → Base de datos propia
+                  ↓
              Auditoría
 ```
 
-En este flujo, cada solicitud es delegada por el Controller al Service, donde se evalúan las reglas de autorización ABAC y las reglas de negocio antes de interactuar con la base de datos. El Service también genera el registro de auditoría correspondiente (con resultado `PERMITIDO` o `DENEGADO`) que se persiste a través del Repository de auditoría, garantizando consistencia, seguridad y trazabilidad en cada operación.
+El ACL actúa como componente lateral del Service. El Controller nunca conoce el ACL. El Service invoca el ACL para obtener la identidad del usuario (desde el JWT) y los datos de pacientes o asignaciones (desde la API de la agenda), pero solo recibe objetos de dominio propios — nunca DTOs externos.
+
+El flujo completo para una operación protegida es:
+
+1. El Controller recibe la solicitud HTTP con el header `Authorization: Bearer <token>`.
+2. El Service invoca `JwtContextAdapter` para extraer `UsuarioContexto` del token.
+3. El Service valida ABAC contra la proyección local `terapeuta_paciente` (nunca contra la API de la agenda directamente).
+4. Si se requieren datos de paciente para mostrar en pantalla, el Service invoca `AgendaModuleClient` y los traduce con `PacienteTranslator`.
+5. El Service ejecuta la lógica de negocio, genera el registro de auditoría y delega la persistencia al Repository.
+6. El Repository interactúa con la base de datos PostgreSQL propia del módulo.

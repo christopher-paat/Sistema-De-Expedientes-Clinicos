@@ -22,14 +22,15 @@
 
 | ID | Regla |
 |---|---|
-| RN-01 | Solo terapeutas con registro activo en **AsignacionTerapeutaPaciente** (estado = "activa")  puede consultar el expediente. |
-| RN-02 | Solo terapeutas con registro activo en **AsignacionTerapeutaPaciente** (estado = "activa")  puede modificar el expediente. |
-| RN-03 | Solo terapeutas con registro activo en **AsignacionTerapeutaPaciente** (estado = "activa")  puede registrar sesiones. |
+| RN-01 | Solo terapeutas con registro activo en la proyección local `terapeuta_paciente` (alimentada por el ACL desde el módulo de agenda) pueden consultar el expediente. |
+| RN-02 | Solo terapeutas con registro activo en la proyección local `terapeuta_paciente` pueden modificar el expediente. |
+| RN-03 | Solo terapeutas con registro activo en la proyección local `terapeuta_paciente` pueden registrar sesiones. |
 | RN-04 | Solo usuarios autorizados pueden aprobar o rechazar reportes. |
 | RN-05 | No se puede modificar un expediente archivado. |
 | RN-06 | No se puede modificar un reporte aprobado. |
 | RN-07 | Toda modificación debe generar un registro de auditoría. |
 | RN-08 | Todo acceso a expediente debe cumplir las políticas de control de acceso definidas en el [_Requisito No Funcional RNF-02_](Requisitos_No_Funcionales.md#rnf---02-control-de-acceso-a-expedientes-clinicos-basado-en-atributos). |
+| RN-09 | El terapeuta no puede registrar un `reporte_sesion` sobre un expediente que no tenga `informe_consentimiento` registrado. El consentimiento informado debe existir antes de la primera sesión clínica, conforme a la NOM-004-SSA3-2012. |
 
 ## Reglas de transición
 

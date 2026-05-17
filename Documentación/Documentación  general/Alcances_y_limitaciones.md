@@ -53,16 +53,44 @@ El sistema proporcionará diferentes funcionalidades dependiendo del tipo de usu
     - Capturar y almacenar la información de la entrevista socioeconómica.
     - Registrar la información correspondiente al acuerdo de consentimiento.
 
+## Actores y separación de sistemas
+
+El módulo clínico y el módulo de agenda son sistemas independientes con actores distintos. La siguiente tabla define qué actor pertenece a qué sistema y por qué:
+
+| Actor | Sistema | Responsabilidad | Acceso al módulo clínico |
+|---|---|---|---|
+| Secretario | Módulo de Agenda | Gestión de citas, disponibilidad de terapeutas, recepción del paciente | Ninguno — por diseño y por privacidad de datos de salud |
+| Coordinador | Módulo de Agenda | Coordinación operativa de la agenda | Ninguno |
+| Terapeuta | Módulo Clínico | Atención clínica, registro de reportes de sesión | Solo sus pacientes asignados |
+| Supervisor | Módulo Clínico | Revisión y aprobación de reportes de terapeutas asignados | Solo sus terapeutas asignados |
+| Administrador | Módulo Clínico | Documentación legal y clínica, cumplimiento normativo, control de calidad | Gestión de documentos administrativos y auditoría |
+
+La separación entre Secretario y Administrador es una decisión arquitectónica intencional. El Secretario no tiene ni debe tener acceso a expedientes clínicos, garantizando el cumplimiento de la **NOM-024-SSA3-2010** sobre confidencialidad de datos de salud.
+
+## Mecanismo de integración con el módulo de agenda
+
+La comunicación entre el módulo de agenda y el módulo clínico se realiza a través de una **Capa Anti-Corrupción (ACL)**. Este mecanismo:
+
+- Recibe notificaciones (webhooks) del módulo de agenda cuando se agenda una cita de Evaluación Inicial o Sesión Terapéutica.
+- Crea automáticamente el expediente clínico cuando se agenda una Evaluación Inicial para un paciente nuevo.
+- Mantiene una proyección local de asignaciones terapeuta-paciente para validaciones ABAC sin dependencia de red.
+- Traduce el modelo externo de la agenda al modelo interno del módulo clínico, sin acoplar ambos sistemas.
+
+Si la API del módulo de agenda no está disponible, el módulo clínico responde con un error controlado para las operaciones que la requieran, sin afectar las operaciones que solo dependen de datos locales.
+
 ## Limitaciones del sistema
 
-- El módulo no implementa un sistema de autenticación o inicio de sesión, pues esta funcionalidad pertenece a otro módulo del sistema general.
-- La asignación de pacientes a terapeutas no se realiza dentro de este módulo, sino que depende de un módulo externo de agenda.
-- El sistema contempla únicamente tres tipos de usuarios: terapeuta, terapeuta supervisor y administrador.
+- El módulo no implementa un sistema de autenticación o inicio de sesión. Esta funcionalidad pertenece al módulo de agenda, que emite tokens JWT consumidos por el ACL del módulo clínico.
+- La asignación de pacientes a terapeutas no se realiza dentro de este módulo. Proviene del módulo de agenda y se sincroniza a través del ACL.
+- La creación del expediente clínico es automática (vía ACL) únicamente para citas de Evaluación Inicial. El administrador no crea expedientes manualmente.
+- El sistema contempla únicamente tres tipos de usuarios con acceso al módulo clínico: Terapeuta, Supervisor y Administrador.
 
 ## Restricciones del sistema
 
 - El acceso a la información y modificación de la misma se encuentra restringido según el rol del usuario dentro del sistema.
+- El terapeuta no puede registrar reportes de sesión si el expediente no tiene consentimiento informado registrado (RN-09).
 - Una sesión clínica no puede agregarse al expediente del paciente sin haber sido aprobada por el supervisor.
 - Los reportes de sesión deben pasar por un estado de revisión antes de ser aceptados o rechazados.
 - Los supervisores solo pueden revisar sesiones de los terapeutas que tienen asignados.
 - El sistema debe garantizar la confidencialidad de la información clínica de los pacientes.
+- Los usuarios con rol `secretaria` o `coordinador` del módulo de agenda reciben acceso denegado (HTTP 401) al intentar autenticarse en el módulo clínico.

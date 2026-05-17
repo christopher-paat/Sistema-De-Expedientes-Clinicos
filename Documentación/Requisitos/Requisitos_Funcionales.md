@@ -50,14 +50,17 @@ El reporte de sesión debe permitir registrar al menos:
 - Nombre del paciente
 - Fecha de la sesión
 - Duración de la sesión
+- Tipo de sesión (Evaluación inicial / Sesión terapéutica)
 - Observaciones clínicas de la sesión
 
 **Precondiciones:**
 - El terapeuta tiene acceso al apartado de control de sesiones en el expediente de un paciente asignado.
+- El expediente del paciente cuenta con un `informe_consentimiento` registrado. Sin este documento, el sistema no permite crear reportes de sesión (RN-09).
 
 **Criterios de aceptación:**
-- Dado un terapeuta con acceso al expediente de un paciente asignado, cuando registra un reporte con nombre del terapeuta, nombre del paciente, fecha, duración y observaciones, el sistema guarda el reporte en el control de sesiones.
+- Dado un terapeuta con acceso al expediente de un paciente asignado, cuando registra un reporte con nombre del terapeuta, nombre del paciente, fecha, duración, tipo de sesión y observaciones, el sistema guarda el reporte en el control de sesiones.
 - El sistema no permite guardar el reporte si falta alguno de los campos obligatorios.
+- El sistema no permite registrar el reporte si el expediente no tiene consentimiento informado registrado; devuelve un error indicando el documento faltante.
 - Al guardar correctamente, el sistema genera un identificador único para el reporte y lo deja en estado inicial de borrador o equivalente.
 
 
@@ -201,18 +204,25 @@ Los registros presentados deben incluir al menos:
 
 ---
 
-### RF - 11 Registro de expediente clínico:
+### RF-11 Creación automática de expediente clínico
 
-**Descripción:** 
-El sistema deberá permitir el registro y almacenaje de expedientes por paciente siguiendo las normativas y leyes pertinentes.
+**Actor:** Sistema (ACL — disparado por el módulo de agenda)
+
+**Descripción:**
+El sistema deberá crear automáticamente el expediente clínico de un paciente cuando el módulo de agenda notifique, a través del webhook del ACL, que se ha agendado una cita de tipo **Evaluación Inicial** para un paciente nuevo.
+
+La creación del expediente es responsabilidad del ACL, no del administrador. El administrador actúa sobre el expediente ya creado para registrar los documentos obligatorios (consentimiento informado y entrevista socioeconómica).
 
 **Restricciones:**
-- Cada paciente registrado deberá contar un expediente.
-- Solo los terapeutas autorizados podrán acceder a la información clínica respectiva.
-- El expediente deberá contar con los campos señalados por las normativas y leyes pertinentes.
+- El expediente se crea con estado `ACTIVO` de forma inmediata al recibir el webhook.
+- Cada paciente puede tener únicamente un expediente (relación 1:1).
+- El sistema valida por `folio` si el paciente ya existe antes de crear un nuevo registro. Si el paciente ya existe, se actualizan sus datos y no se crea un expediente duplicado.
+- La creación del expediente no requiere intervención manual del administrador.
+- Solo los terapeutas asignados pueden acceder al expediente creado.
 
 **Criterios de aceptación:**
-- Dado un paciente registrado que aún no cuenta con expediente, cuando el sistema ejecuta el alta del expediente, crea exactamente un expediente asociado a ese paciente.
+- Dado un webhook de Evaluación Inicial con un paciente nuevo (folio no registrado), el sistema crea el registro del paciente y su expediente en estado `ACTIVO`.
+- Si el paciente ya existe (mismo folio), el sistema actualiza sus datos y no genera un expediente duplicado.
+- Si ya existe un expediente para el paciente, el sistema no crea uno nuevo bajo ninguna circunstancia.
 - El expediente creado incluye los campos obligatorios definidos por la normativa aplicable.
-- Si ya existe un expediente para el paciente, el sistema impide crear uno duplicado.
-- El expediente solo puede ser consultado por el terapeuta asignado; cualquier otro usuario recibe un rechazo de acceso.
+- El expediente solo puede ser consultado por el terapeuta asignado; cualquier otro usuario recibe rechazo de acceso.

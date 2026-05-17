@@ -28,9 +28,13 @@ Es de importancia mantener la confidencialidad de los expedientes para evitar el
 - Se permitirá la consulta y modificación de expedientes únicamente cuando el terapeuta se encuentre asignado al identificador del expediente correspondiente.
 - Se permitirá registrar nuevas sesiones clínicas únicamente a terapeutas asignados a dicho expediente.
 
+**Fuente de datos de asignación:**
+Las asignaciones terapeuta-paciente utilizadas para las validaciones ABAC provienen de una proyección local (`terapeuta_paciente`) alimentada por la Capa Anti-Corrupción (ACL). El ACL sincroniza esta proyección desde el módulo de agenda a través de un webhook cada vez que se crea o cancela una asignación. Las validaciones ABAC siempre consultan la proyección local, no el módulo de agenda directamente, para evitar dependencias de red en cada operación.
+
 **Restricciones:**
 - La autorización debe hacerse antes de la ejecución de cualquier operación que conlleve tanto la consulta como modificación de los expedientes.
 - Únicamente el rol permitido para interactuar con los expedientes será el terapeuta.
+- Los usuarios con rol `secretaria` o `coordinador` del módulo de agenda no tienen acceso al módulo clínico bajo ninguna circunstancia.
 
 **Criterios de aceptación:**
 - Cuando el usuario solicite consultar un expediente asignado a su identificador, el sistema deberá permitir su visualización.
@@ -48,11 +52,14 @@ Es de importancia mantener la confidencialidad de los expedientes para evitar el
 **Descripción:**
 El sistema deberá garantizar el aislamiento de los expedientes clínicos mediante controles de acceso basados en la asignación de pacientes a terapeutas, evitando que usuarios accedan a información clínica de pacientes que no forman parte de su ámbito de atención.
 
+**Fuente de datos de asignación:**
+Los datos de asignación utilizados para el aislamiento provienen de la tabla de proyección local `terapeuta_paciente`, la cual es alimentada y mantenida por el ACL a partir de los datos del módulo de agenda. El módulo clínico nunca consulta directamente la base de datos de la agenda para verificar asignaciones; siempre utiliza su propia proyección local. Las asignaciones supervisor-terapeuta (`supervisor_terapeuta`) son gestionadas internamente por el módulo clínico y no provienen de la agenda.
+
 **Restricciones:**
-- Las consultas a datos clínicos deberán aplicar filtrado por asignación en la capa de acceso a datos..
+- Las consultas a datos clínicos deberán aplicar filtrado por asignación en la capa de acceso a datos.
 - El sistema no deberá permitir el acceso a expedientes clínicos de pacientes no asignados al terapeuta.
 - La validación de asignación deberá realizarse en el backend para cada operación que implique acceso a información clínica.
-- 
+
 **Criterios de aceptación:**
 - Las consultas realizadas por terapeutas retornan únicamente pacientes que les han sido asignados.
 - Las solicitudes de acceso a expedientes de pacientes no asignados son rechazadas por el servidor.

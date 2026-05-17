@@ -31,9 +31,12 @@ CREATE TABLE IF NOT EXISTS administrador (
 );
 
 -- Tablas de asociación
+-- terapeuta_paciente: proyección local alimentada por el ACL desde el módulo de agenda.
+-- No se modifica manualmente. El ACL la sincroniza vía webhooks o en el primer login del terapeuta.
 CREATE TABLE IF NOT EXISTS terapeuta_paciente (
-    id_terapeuta BIGINT NOT NULL REFERENCES terapeuta(id_terapeuta) ON DELETE CASCADE,
-    id_paciente  BIGINT NOT NULL REFERENCES paciente(id_paciente)   ON DELETE CASCADE,
+    id_terapeuta    BIGINT      NOT NULL REFERENCES terapeuta(id_terapeuta) ON DELETE CASCADE,
+    id_paciente     BIGINT      NOT NULL REFERENCES paciente(id_paciente)   ON DELETE CASCADE,
+    sincronizado_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (id_terapeuta, id_paciente)
 );
 
@@ -60,6 +63,8 @@ CREATE TABLE IF NOT EXISTS reporte_sesion (
     fecha                  DATE         NOT NULL,
     fecha_sesion           DATE         NOT NULL,
     duracion_sesion        INTEGER      CHECK (duracion_sesion > 0),
+    tipo_sesion            VARCHAR(30)  NOT NULL
+                               CHECK (tipo_sesion IN ('EVALUACION_INICIAL', 'SESION_TERAPEUTICA')),
     observaciones_clinicas TEXT         NOT NULL,
     estado                 VARCHAR(20)  NOT NULL DEFAULT 'CREADO'
                                CHECK (estado IN ('CREADO', 'PENDIENTE', 'APROBADO', 'RECHAZADO')),

@@ -55,6 +55,7 @@ Contiene **ReporteSesion**, **InformeConsentimiento** y **EntrevistaSocioEconomi
 + idTerapeuta: Long
 + fechaSesion: Date
 + duracionSesion: Int
++ tipoSesion: String  // EVALUACION_INICIAL | SESION_TERAPEUTICA
 + observacionesClinicas: String
 + estado: String  // CREADO | PENDIENTE | APROBADO | RECHAZADO
 + comentariosTerapeuta: String
@@ -72,6 +73,57 @@ Contiene **ReporteSesion**, **InformeConsentimiento** y **EntrevistaSocioEconomi
 + lugarProcedencia: String
 + vivienda: String
 + estadoSaludFamiliar: String
+
+## Clases de la Capa Anti-Corrupción (ACL)
+
+Estas clases pertenecen al ACL del módulo clínico. Actúan como intermediarias entre los sistemas externos (módulo de agenda) y el dominio interno. Ninguna clase del dominio ni del Service las conoce directamente — el ACL las encapsula.
+
+### *UsuarioContexto* (value object inmutable)
+Representa la identidad del usuario autenticado, extraída del JWT.
++ idUsuario: Long        // claim "sub" del JWT, parseado a Long
++ rol: RolEnum           // TERAPEUTA | SUPERVISOR | ADMINISTRADOR
++ nombreCompleto: String // claim "name" del JWT
+
+### *RolEnum* (enumeración interna)
++ TERAPEUTA
++ SUPERVISOR
++ ADMINISTRADOR
+
+### JwtContextAdapter
+Extrae la identidad del usuario del token JWT emitido por el módulo de agenda.
+---
++ extraerContexto(token: String): UsuarioContexto
+
+### AgendaModuleClient
+Cliente HTTP que llama a la API REST del módulo de agenda. Devuelve DTOs externos crudos.
+---
++ getPaciente(idPacienteExterno: Long): ExternalPacienteDTO
++ getTerapeutaDeUsuario(userId: Long): ExternalTerapeutaDTO
++ getActivePacientes(therapistId: Long): List\<ExternalPacienteDTO\>
+
+### *ExternalPacienteDTO* (value object)
+Contrato con la API de la agenda. Si la agenda cambia su modelo, solo este DTO cambia.
++ id: Long
++ folio: String
++ fullName: String
++ phone: String
++ email: String
++ birthDate: LocalDate
+
+### *ExternalTerapeutaDTO* (value object)
++ therapistId: Long   // therapists.id en la agenda
++ userId: Long        // therapists.user_id = users.id = claim "sub" del JWT
++ fullName: String
+
+### PacienteTranslator
+Convierte ExternalPacienteDTO → Paciente del dominio interno.
+---
++ traducir(dto: ExternalPacienteDTO): Paciente
+
+### TerapeutaTranslator
+Convierte ExternalTerapeutaDTO → Terapeuta del dominio interno.
+---
++ traducir(dto: ExternalTerapeutaDTO): Terapeuta
 
 ## Diagrama de relación de clases
 
