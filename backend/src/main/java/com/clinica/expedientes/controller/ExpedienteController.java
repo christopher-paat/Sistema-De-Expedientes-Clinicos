@@ -57,6 +57,14 @@ public class ExpedienteController {
         return ResponseEntity.ok(administradorService.actualizarConsentimiento(userId, idExpediente, req));
     }
 
+    // TERAPEUTA: detalle completo con documentos (con ABAC)
+    @GetMapping("/{idExpediente}/detalle-terapeuta")
+    public ResponseEntity<ExpedienteDetalleTerapeutaResponse> getExpedienteDetalleTerapeuta(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long idExpediente) {
+        return ResponseEntity.ok(terapeutaService.getExpedienteDetalleTerapeuta(userId, idExpediente));
+    }
+
     // CU-02: Acceder a expediente clínico (TERAPEUTA con ABAC)
     @GetMapping("/{idExpediente}")
     public ResponseEntity<ExpedienteDetalleResponse> getExpediente(

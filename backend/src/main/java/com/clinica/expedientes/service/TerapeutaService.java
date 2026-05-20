@@ -74,6 +74,57 @@ public class TerapeutaService {
         return mapToExpedienteDetalle(exp);
     }
 
+    @Transactional(readOnly = true)
+    public ExpedienteDetalleTerapeutaResponse getExpedienteDetalleTerapeuta(Long userId, Long idExpediente) {
+        Terapeuta terapeuta = resolverTerapeuta(userId);
+
+        boolean exists = expedienteRepo.existsById(idExpediente);
+        boolean tieneAcceso = expedienteRepo.terapeutaTieneAccesoAExpediente(idExpediente, terapeuta.getIdUsuario());
+
+        if (!tieneAcceso) {
+            auditoriaService.registrar(userId, RolUsuario.TERAPEUTA, AccionAuditoria.CONSULTAR_EXPEDIENTE,
+                    "Expediente", String.valueOf(idExpediente), ResultadoAuditoria.DENEGADO);
+            if (!exists) throw new RecursoNoEncontradoException("Expediente no encontrado: " + idExpediente);
+            throw new AccesoDenegadoException("El terapeuta no tiene asignación al expediente solicitado.");
+        }
+
+        Expediente exp = expedienteRepo.findById(idExpediente).get();
+        auditoriaService.registrar(userId, RolUsuario.TERAPEUTA, AccionAuditoria.CONSULTAR_EXPEDIENTE,
+                "Expediente", String.valueOf(idExpediente), ResultadoAuditoria.PERMITIDO);
+
+        Paciente p = exp.getPaciente();
+        PacienteDetalleDto pacienteDto = new PacienteDetalleDto(
+                p.getIdUsuario(), p.getNombreCompleto(), p.getEdad(),
+                p.getFechaNacimiento(), p.getCorreoElectronico(), p.getNumeroTelefonico()
+        );
+
+        EntrevistaResponse entrevista = null;
+        if (exp.getEntrevistaSocioeconomica() != null) {
+            EntrevistaSocioeconomica e = exp.getEntrevistaSocioeconomica();
+            entrevista = new EntrevistaResponse(e.getIdDocumento(), idExpediente, e.getFecha(),
+                    e.getIngresoFamiliar(), e.getGastoAlimentacion(),
+                    e.getLugarProcedencia(), e.getVivienda(), e.getEstadoSaludFamiliar());
+        }
+
+        ConsentimientoResponse consentimiento = null;
+        if (exp.getInformeConsentimiento() != null) {
+            InformeConsentimiento c = exp.getInformeConsentimiento();
+            consentimiento = new ConsentimientoResponse(c.getIdDocumento(), idExpediente, c.getFecha(),
+                    c.getCuerpoDelTexto(), c.getAcuerdoConfidencial());
+        }
+
+        List<ReporteResumenDto> reportes = exp.getReportesSesion() == null
+                ? Collections.emptyList()
+                : exp.getReportesSesion().stream()
+                        .map(r -> new ReporteResumenDto(r.getIdDocumento(), r.getFechaSesion(), r.getEstado().name()))
+                        .collect(Collectors.toList());
+
+        return new ExpedienteDetalleTerapeutaResponse(
+                exp.getIdExpediente(), exp.getEstado().name(), exp.getFechaProxCita(),
+                pacienteDto, entrevista, consentimiento, reportes
+        );
+    }
+
     @Transactional
     public ReporteCreadoResponse crearReporte(Long userId, Long idExpediente, CrearReporteRequest req) {
         Terapeuta terapeuta = resolverTerapeuta(userId);

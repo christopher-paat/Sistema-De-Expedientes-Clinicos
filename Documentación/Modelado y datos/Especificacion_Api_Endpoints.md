@@ -152,6 +152,76 @@ Los campos `entrevistaSocioeconomica` e `informeConsentimiento` son `null` si a�
 
 ---
 
+### Consultar detalle completo de expediente (terapeuta)
+
+```
+GET /api/v1/expedientes/{idExpediente}/detalle-terapeuta
+```
+
+**Autorización:** `TERAPEUTA` — únicamente si está asignado al expediente (ABAC).
+
+**Parámetros de ruta:**
+
+| Parámetro    | Tipo | Descripción |
+|--------------|------|-------------|
+| idExpediente | Long | Identificador del expediente clínico |
+
+**Response 200 OK:**
+
+```json
+{
+  "idExpediente": 45,
+  "estado": "ACTIVO",
+  "fechaProxCita": "2026-05-10T09:00:00Z",
+  "paciente": {
+    "idPaciente": 12,
+    "nombreCompleto": "María López García",
+    "edad": 34,
+    "fechaNacimiento": "1992-03-15",
+    "correoElectronico": "maria.lopez@correo.com",
+    "numeroTelefonico": "5512345678"
+  },
+  "entrevistaSocioeconomica": {
+    "idDocumento": 101,
+    "idExpediente": 45,
+    "fecha": "2026-04-29",
+    "ingresoFamiliar": 8500.00,
+    "gastoAlimentacion": 2000.00,
+    "lugarProcedencia": "Ciudad de México, CDMX",
+    "vivienda": "Casa propia de 3 habitaciones.",
+    "estadoSaludFamiliar": "2 enfermos crónicos"
+  },
+  "informeConsentimiento": {
+    "idDocumento": 102,
+    "idExpediente": 45,
+    "fecha": "2026-04-29",
+    "cuerpoDelTexto": "Texto legal completo...",
+    "acuerdoConfidencial": "El personal clínico se compromete a proteger la privacidad..."
+  },
+  "reportesSesion": [
+    {
+      "idDocumento": 201,
+      "fechaSesion": "2026-04-01",
+      "estado": "APROBADO"
+    }
+  ]
+}
+```
+
+Los campos `entrevistaSocioeconomica` e `informeConsentimiento` son `null` si aún no han sido registrados. El arreglo `reportesSesion` puede estar vacío `[]`.
+
+**Códigos de respuesta:**
+
+| Código | Significado |
+|--------|-------------|
+| 200    | Detalle retornado exitosamente |
+| 403    | El terapeuta no tiene asignación al expediente (ABAC) o no tiene rol `TERAPEUTA` |
+| 404    | El expediente no existe |
+
+> **Auditoría:** genera un registro `CONSULTAR_EXPEDIENTE` con resultado `PERMITIDO` o `DENEGADO`.
+
+---
+
 ### CU-03 — Registrar reporte de sesión
 
 **RF-03**
@@ -1082,6 +1152,7 @@ GET /api/v1/auditoria
 | CU-11       | POST   | `/api/v1/expedientes/{idExpediente}/entrevista-socioeconomica`| `ADMINISTRADOR`                 |
 | CU-12       | POST   | `/api/v1/expedientes/{idExpediente}/consentimiento`           | `ADMINISTRADOR`                 |
 | —           | GET    | `/api/v1/expedientes/pendientes-documentos`                   | `ADMINISTRADOR`                 |
+| —           | GET    | `/api/v1/expedientes/{idExpediente}/detalle-terapeuta`        | `TERAPEUTA` (ABAC)              |
 | —           | GET    | `/api/v1/expedientes/{idExpediente}/detalle-admin`            | `ADMINISTRADOR`                 |
 | —           | PUT    | `/api/v1/expedientes/{idExpediente}/entrevista-socioeconomica`| `ADMINISTRADOR`                 |
 | —           | PUT    | `/api/v1/expedientes/{idExpediente}/consentimiento`           | `ADMINISTRADOR`                 |

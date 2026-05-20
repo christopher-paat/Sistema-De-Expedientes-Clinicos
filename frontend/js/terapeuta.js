@@ -127,7 +127,7 @@ async function selectPaciente(idExpediente, el) {
   showLoadingPanel('Cargando expediente...');
 
   try {
-    const data = await api.get(`/expedientes/${idExpediente}`);
+    const data = await api.get(`/expedientes/${idExpediente}/detalle-terapeuta`);
     expedienteActual = data;
     reporteActual = null;
     tabActiva = 'info';
@@ -638,7 +638,7 @@ document.getElementById('btnGuardarReporte').addEventListener('click', async () 
       closeModal('modalReporte');
       setModalStatus('');
       toast('Sesión creada exitosamente', 'success');
-      const exp = await api.get(`/expedientes/${idExpedienteReporte}`);
+      const exp = await api.get(`/expedientes/${idExpedienteReporte}/detalle-terapeuta`);
       expedienteActual = exp;
       filtroEstadoSesiones = null;
       renderExpediente(exp, 'sesiones');
