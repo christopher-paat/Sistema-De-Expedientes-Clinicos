@@ -41,7 +41,7 @@ function showPanelError(panelId, msg) {
 async function loadPacientes() {
   showPanelLoading('panelPacientes', 'Cargando pacientes...');
   try {
-    const data = await api.get('/expedientes');
+    const data = await api.get('/expedientes/pendientes-documentos');
     todosLosExpedientes = data;
     renderListaPacientes(data);
   } catch (e) {
@@ -51,19 +51,18 @@ async function loadPacientes() {
 }
 
 function tienePendientes(r) {
-  return !r.entrevistaSocioeconomica || !r.informeConsentimiento;
+  return r.faltaEntrevista || r.faltaConsentimiento;
 }
 
 function renderListaPacientes(lista) {
-  const activos = lista.filter(r => r.estado === 'ACTIVO');
   const panel = document.getElementById('panelPacientes');
 
   panel.innerHTML = `
     <div class="card">
       <div class="card-header">
         <div>
-          <h2>Pacientes</h2>
-          <span style="font-size:0.8rem;color:#94A3B8;margin-top:0.1rem;display:block;">${activos.length} paciente(s) activo(s)</span>
+          <h2>Documentos Pendientes</h2>
+          <span style="font-size:0.8rem;color:#94A3B8;margin-top:0.1rem;display:block;">${lista.length} expediente(s) con documentos por registrar</span>
         </div>
         <div style="display:flex;gap:0.5rem;align-items:center;">
           <div style="position:relative;">
@@ -88,7 +87,7 @@ function renderListaPacientes(lista) {
         </div>
       </div>
       <div id="pacientesListInline">
-        ${renderPacientesItems(activos)}
+        ${renderPacientesItems(lista)}
       </div>
     </div>
   `;
@@ -108,7 +107,7 @@ function renderPacientesItems(lista) {
 
   return lista.map(r => {
     const pendiente = tienePendientes(r);
-    const nombre = r.nombrePaciente || (r.paciente && r.paciente.nombreCompleto) || ('Paciente #' + r.idPaciente);
+    const nombre = r.nombrePaciente || ('Paciente #' + r.idExpediente);
     return `
     <div class="patient-item patient-item-full" onclick="selectPaciente(${r.idExpediente}, this)">
       <div class="patient-avatar" style="background:#EFF6FF;color:#1D4ED8;">
@@ -133,13 +132,9 @@ function renderPacientesItems(lista) {
 
 function filtrarPacienteInline(query) {
   const q = query.trim().toLowerCase();
-  const activos = todosLosExpedientes.filter(r => r.estado === 'ACTIVO');
   const filtrados = q
-    ? activos.filter(r => {
-        const nombre = (r.nombrePaciente || (r.paciente && r.paciente.nombreCompleto) || '').toLowerCase();
-        return nombre.includes(q);
-      })
-    : activos;
+    ? todosLosExpedientes.filter(r => (r.nombrePaciente || '').toLowerCase().includes(q))
+    : todosLosExpedientes;
   const el = document.getElementById('pacientesListInline');
   if (el) el.innerHTML = renderPacientesItems(filtrados);
 }

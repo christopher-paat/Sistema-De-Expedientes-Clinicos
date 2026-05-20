@@ -19,6 +19,13 @@ public interface ExpedienteRepository extends JpaRepository<Expediente, Long> {
     @Query("SELECT e FROM Expediente e JOIN FETCH e.paciente WHERE e.terapeuta.idUsuario = :idTerapeuta")
     List<Expediente> findByTerapeutaPaciente(@Param("idTerapeuta") Long idTerapeuta);
 
+    // Expedientes con entrevista o consentimiento pendiente
+    @Query("SELECT e FROM Expediente e JOIN FETCH e.paciente " +
+           "LEFT JOIN e.entrevistaSocioeconomica ent " +
+           "LEFT JOIN e.informeConsentimiento con " +
+           "WHERE ent IS NULL OR con IS NULL")
+    List<Expediente> findConDocumentosPendientes();
+
     // ABAC: verifica que el expediente esté asignado al terapeuta
     @Query("SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END " +
            "FROM Expediente e " +

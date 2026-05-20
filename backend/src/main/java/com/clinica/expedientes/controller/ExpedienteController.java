@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/expedientes")
 public class ExpedienteController {
@@ -19,6 +21,13 @@ public class ExpedienteController {
     public ExpedienteController(TerapeutaService terapeutaService, AdministradorService administradorService) {
         this.terapeutaService = terapeutaService;
         this.administradorService = administradorService;
+    }
+
+    // Admin: expedientes con documentos pendientes (debe ir antes de /{idExpediente})
+    @GetMapping("/pendientes-documentos")
+    public ResponseEntity<List<ExpedientePendienteResponse>> getExpedientesPendientes(
+            @RequestHeader("X-User-Id") Long userId) {
+        return ResponseEntity.ok(administradorService.getExpedientesPendientes(userId));
     }
 
     // CU-02: Acceder a expediente clínico (TERAPEUTA con ABAC)
