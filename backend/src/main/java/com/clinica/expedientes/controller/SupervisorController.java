@@ -1,6 +1,8 @@
 package com.clinica.expedientes.controller;
 
 import com.clinica.expedientes.dto.response.ReportePendienteResponse;
+import com.clinica.expedientes.dto.response.UsuarioResumenResponse;
+import com.clinica.expedientes.service.AdministradorService;
 import com.clinica.expedientes.service.SupervisorService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -14,9 +16,18 @@ import java.util.List;
 public class SupervisorController {
 
     private final SupervisorService supervisorService;
+    private final AdministradorService administradorService;
 
-    public SupervisorController(SupervisorService supervisorService) {
+    public SupervisorController(SupervisorService supervisorService, AdministradorService administradorService) {
         this.supervisorService = supervisorService;
+        this.administradorService = administradorService;
+    }
+
+    // Admin: listar todos los supervisores
+    @GetMapping
+    public ResponseEntity<List<UsuarioResumenResponse>> getSupervisores(
+            @RequestHeader("X-User-Id") Long userId) {
+        return ResponseEntity.ok(administradorService.getSupervisores(userId));
     }
 
     // CU-06: Visualizar reportes pendientes de revisión

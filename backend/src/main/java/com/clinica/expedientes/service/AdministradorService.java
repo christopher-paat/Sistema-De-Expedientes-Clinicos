@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AdministradorService {
@@ -19,19 +21,22 @@ public class AdministradorService {
     private final UsuarioRepository usuarioRepo;
     private final PacienteRepository pacienteRepo;
     private final TerapeutaRepository terapeutaRepo;
+    private final SupervisorRepository supervisorRepo;
     private final ExpedienteRepository expedienteRepo;
     private final EntrevistaSocioeconomicaRepository entrevistaRepo;
     private final InformeConsentimientoRepository consentimientoRepo;
     private final AuditoriaService auditoriaService;
 
     public AdministradorService(UsuarioRepository usuarioRepo, PacienteRepository pacienteRepo,
-                                 TerapeutaRepository terapeutaRepo, ExpedienteRepository expedienteRepo,
+                                 TerapeutaRepository terapeutaRepo, SupervisorRepository supervisorRepo,
+                                 ExpedienteRepository expedienteRepo,
                                  EntrevistaSocioeconomicaRepository entrevistaRepo,
                                  InformeConsentimientoRepository consentimientoRepo,
                                  AuditoriaService auditoriaService) {
         this.usuarioRepo = usuarioRepo;
         this.pacienteRepo = pacienteRepo;
         this.terapeutaRepo = terapeutaRepo;
+        this.supervisorRepo = supervisorRepo;
         this.expedienteRepo = expedienteRepo;
         this.entrevistaRepo = entrevistaRepo;
         this.consentimientoRepo = consentimientoRepo;
@@ -44,6 +49,52 @@ public class AdministradorService {
         if (!(u instanceof Administrador)) {
             throw new AccesoDenegadoException("El usuario no tiene rol ADMINISTRADOR.");
         }
+    }
+
+    public List<ExpedientePendienteResponse> getExpedientesPendientes(Long userId) {
+        resolverAdministrador(userId);
+
+        List<ExpedientePendienteResponse> resultado = expedienteRepo.findConDocumentosPendientes().stream()
+                .map(e -> new ExpedientePendienteResponse(
+                        e.getIdExpediente(),
+                        e.getPaciente().getNombreCompleto(),
+                        e.getEntrevistaSocioeconomica() == null,
+                        e.getInformeConsentimiento() == null))
+                .collect(Collectors.toList());
+
+        auditoriaService.registrar(userId, RolUsuario.ADMINISTRADOR,
+                AccionAuditoria.CONSULTAR_EXPEDIENTES_PENDIENTES,
+                "Expediente", null, ResultadoAuditoria.PERMITIDO);
+
+        return resultado;
+    }
+
+    public List<UsuarioResumenResponse> getTerapeutas(Long userId) {
+        resolverAdministrador(userId);
+
+        List<UsuarioResumenResponse> resultado = terapeutaRepo.findAll().stream()
+                .map(t -> new UsuarioResumenResponse(t.getIdUsuario(), t.getNombreCompleto()))
+                .collect(Collectors.toList());
+
+        auditoriaService.registrar(userId, RolUsuario.ADMINISTRADOR,
+                AccionAuditoria.CONSULTAR_TERAPEUTAS,
+                "Terapeuta", null, ResultadoAuditoria.PERMITIDO);
+
+        return resultado;
+    }
+
+    public List<UsuarioResumenResponse> getSupervisores(Long userId) {
+        resolverAdministrador(userId);
+
+        List<UsuarioResumenResponse> resultado = supervisorRepo.findAll().stream()
+                .map(s -> new UsuarioResumenResponse(s.getIdUsuario(), s.getNombreCompleto()))
+                .collect(Collectors.toList());
+
+        auditoriaService.registrar(userId, RolUsuario.ADMINISTRADOR,
+                AccionAuditoria.CONSULTAR_SUPERVISORES,
+                "Supervisor", null, ResultadoAuditoria.PERMITIDO);
+
+        return resultado;
     }
 
     @Transactional
