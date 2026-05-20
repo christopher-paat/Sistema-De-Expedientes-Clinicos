@@ -2,6 +2,7 @@
 let todosLosExpedientes = [];
 let expedienteActual = null;
 let usuariosLoaded = false;
+let filtroPendientes = false;
 
 /* ===== INIT ===== */
 window.addEventListener('DOMContentLoaded', () => {
@@ -43,6 +44,7 @@ async function loadPacientes() {
   try {
     const data = await api.get('/expedientes/pendientes-documentos');
     todosLosExpedientes = data;
+    filtroPendientes = false;
     renderListaPacientes(data);
   } catch (e) {
     toast(e.message, 'error');
@@ -56,15 +58,25 @@ function tienePendientes(r) {
 
 function renderListaPacientes(lista) {
   const panel = document.getElementById('panelPacientes');
+  const pendientesCount = lista.filter(r => tienePendientes(r)).length;
 
   panel.innerHTML = `
     <div class="card">
       <div class="card-header">
         <div>
-          <h2>Documentos Pendientes</h2>
-          <span style="font-size:0.8rem;color:#94A3B8;margin-top:0.1rem;display:block;">${lista.length} expediente(s) con documentos por registrar</span>
+          <h2>Pacientes</h2>
+          <span style="font-size:0.8rem;color:#94A3B8;margin-top:0.1rem;display:block;">${lista.length} paciente(s) registrado(s)</span>
         </div>
-        <div style="display:flex;gap:0.5rem;align-items:center;">
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+          <button onclick="toggleFiltroPendientes()" style="
+            display:flex;flex-direction:column;padding:0.3rem 0.75rem;gap:0.05rem;
+            border-radius:8px;border:1.5px solid ${filtroPendientes ? '#F59E0B' : '#FDE68A'};
+            background:${filtroPendientes ? '#FEF3C7' : '#FFFBEB'};cursor:pointer;
+            font-family:inherit;text-align:left;transition:border-color 0.15s,background 0.15s;
+          ">
+            <span style="font-size:0.6875rem;font-weight:700;color:#D97706;letter-spacing:0.05em;">PENDIENTES</span>
+            <span style="font-size:1.125rem;font-weight:700;color:#D97706;line-height:1.2;">${pendientesCount}</span>
+          </button>
           <div style="position:relative;">
             <input
               type="text"
@@ -87,10 +99,22 @@ function renderListaPacientes(lista) {
         </div>
       </div>
       <div id="pacientesListInline">
-        ${renderPacientesItems(lista)}
+        ${renderPacientesItems(getListaFiltrada(''))}
       </div>
     </div>
   `;
+}
+
+function getListaFiltrada(query) {
+  const q = (query || '').trim().toLowerCase();
+  let filtrados = filtroPendientes ? todosLosExpedientes.filter(r => tienePendientes(r)) : todosLosExpedientes;
+  if (q) filtrados = filtrados.filter(r => (r.nombrePaciente || '').toLowerCase().includes(q));
+  return filtrados;
+}
+
+function toggleFiltroPendientes() {
+  filtroPendientes = !filtroPendientes;
+  renderListaPacientes(todosLosExpedientes);
 }
 
 function renderPacientesItems(lista) {
@@ -131,23 +155,32 @@ function renderPacientesItems(lista) {
 }
 
 function filtrarPacienteInline(query) {
-  const q = query.trim().toLowerCase();
-  const filtrados = q
-    ? todosLosExpedientes.filter(r => (r.nombrePaciente || '').toLowerCase().includes(q))
-    : todosLosExpedientes;
   const el = document.getElementById('pacientesListInline');
-  if (el) el.innerHTML = renderPacientesItems(filtrados);
+  if (el) el.innerHTML = renderPacientesItems(getListaFiltrada(query));
 }
 
-function selectPaciente(idExpediente, itemEl) {
+async function selectPaciente(idExpediente, itemEl) {
   if (itemEl) {
     document.querySelectorAll('#panelPacientes .patient-item').forEach(i => i.classList.remove('active'));
     itemEl.classList.add('active');
   }
-  const r = todosLosExpedientes.find(e => e.idExpediente === idExpediente);
-  if (!r) return;
-  expedienteActual = r;
-  renderDetallePaciente(r);
+  showPanelLoading('panelPacientes', 'Cargando expediente...');
+  try {
+    const data = await api.get(`/expedientes/${idExpediente}/detalle-admin`);
+    expedienteActual = {
+      idExpediente: data.idExpediente,
+      nombrePaciente: data.nombrePaciente,
+      estado: data.estado,
+      faltaEntrevista: !data.entrevistaSocioeconomica,
+      faltaConsentimiento: !data.informeConsentimiento,
+      entrevistaSocioeconomica: data.entrevistaSocioeconomica || null,
+      informeConsentimiento: data.informeConsentimiento || null,
+    };
+    renderDetallePaciente(expedienteActual);
+  } catch (e) {
+    toast(e.message, 'error');
+    showPanelError('panelPacientes', e.message);
+  }
 }
 
 function renderDetallePaciente(r) {
@@ -183,18 +216,52 @@ function renderDetallePaciente(r) {
           ${r.faltaConsentimiento ? renderFormConsentimiento(r.idExpediente) : ''}
         </div>`}
 
-        ${!r.faltaEntrevista ? `
-        <div class="report-section" style="margin-top:0.75rem;">
-          <div class="section-title">Entrevista Socioeconómica</div>
-          <div class="report-text-block" style="color:#166534;background:#F0FDF4;border-color:#86EFAC;">Registrada</div>
-        </div>` : ''}
+        ${!r.faltaEntrevista && r.entrevistaSocioeconomica ? renderDocCardAdmin('Entrevista Socioeconómica', 'Evaluación inicial de contexto social, económico y familiar del paciente', r.entrevistaSocioeconomica, 'Registrado', 'entrevista') : ''}
+        ${!r.faltaConsentimiento && r.informeConsentimiento ? renderDocCardAdmin('Consentimiento Informado', 'Documento de autorización para tratamiento psicológico', r.informeConsentimiento, 'Firmado', 'consentimiento') : ''}
 
-        ${!r.faltaConsentimiento ? `
-        <div class="report-section" style="margin-top:0.75rem;">
-          <div class="section-title">Consentimiento Informado</div>
-          <div class="report-text-block" style="color:#166534;background:#F0FDF4;border-color:#86EFAC;">Registrado</div>
-        </div>` : ''}
+      </div>
+    </div>
+  `;
+}
 
+function renderDocCardAdmin(nombre, desc, doc, estado, tipo) {
+  return `
+    <div class="doc-card card" style="margin-top:0.75rem;margin-bottom:0.5rem;">
+      <div class="doc-card-body">
+        <div class="doc-card-left">
+          <div class="doc-card-icon">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+        <div class="doc-card-content">
+          <div class="doc-card-top">
+            <div>
+              <div class="doc-card-name">${esc(nombre)}</div>
+              <div class="doc-card-desc">${esc(desc)}</div>
+            </div>
+            <span class="badge badge-aprobado">${esc(estado)}</span>
+          </div>
+          <div class="info-grid" style="margin-top:0.75rem;">
+            <div class="info-item">
+              <div class="label">FECHA DE REGISTRO</div>
+              <div class="value">${fDate(doc.fecha)}</div>
+            </div>
+            <div class="info-item">
+              <div class="label">ID DOCUMENTO</div>
+              <div class="value">#${esc(doc.idDocumento)}</div>
+            </div>
+          </div>
+          <div class="doc-card-actions">
+            <button class="btn btn-secondary btn-sm" onclick="verDocumento('${tipo}')">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Ver Documento
+            </button>
+            <button class="btn btn-warning btn-sm" onclick="editarDocumento('${tipo}')">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Editar
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -273,8 +340,7 @@ async function guardarEntrevista(idExpediente, btn) {
       estadoSaludFamiliar: salud,
     });
     toast('Entrevista socioeconómica registrada', 'success');
-    expedienteActual.faltaEntrevista = false;
-    renderDetallePaciente(expedienteActual);
+    await selectPaciente(idExpediente, null);
   } catch (e) {
     toast(e.message, 'error');
     if (resEl) resEl.innerHTML = `<div class="alert alert-error">${esc(e.message)}</div>`;
@@ -301,8 +367,7 @@ async function guardarConsentimiento(idExpediente, btn) {
       acuerdoConfidencial: acuerdo,
     });
     toast('Consentimiento informado registrado', 'success');
-    expedienteActual.faltaConsentimiento = false;
-    renderDetallePaciente(expedienteActual);
+    await selectPaciente(idExpediente, null);
   } catch (e) {
     toast(e.message, 'error');
     if (resEl) resEl.innerHTML = `<div class="alert alert-error">${esc(e.message)}</div>`;
@@ -447,4 +512,80 @@ function renderAuditoria(lista) {
         <tbody>${rows}</tbody>
       </table>
     </div>`;
+}
+
+/* ===== EDITAR DOCUMENTO ===== */
+let tipoDocEditar = null;
+let idExpedienteEditar = null;
+
+function editarDocumento(tipo) {
+  if (!expedienteActual) return;
+  tipoDocEditar = tipo;
+  idExpedienteEditar = expedienteActual.idExpediente;
+
+  document.getElementById('editEntrevistaFields').style.display = 'none';
+  document.getElementById('editConsentimientoFields').style.display = 'none';
+  document.getElementById('mslEditarDoc').textContent = '';
+  document.getElementById('mslEditarDoc').className = 'modal-status-line';
+
+  if (tipo === 'entrevista') {
+    const doc = expedienteActual.entrevistaSocioeconomica;
+    document.getElementById('modalEditarDocTitulo').textContent = 'Editar Entrevista Socioeconómica';
+    document.getElementById('editEntrevistaFields').style.display = '';
+    document.getElementById('editIngreso').value  = doc.ingresoFamiliar   || '';
+    document.getElementById('editGasto').value    = doc.gastoAlimentacion || '';
+    document.getElementById('editLugar').value    = doc.lugarProcedencia  || '';
+    document.getElementById('editVivienda').value = doc.vivienda          || '';
+    document.getElementById('editSalud').value    = doc.estadoSaludFamiliar || '';
+  } else {
+    const doc = expedienteActual.informeConsentimiento;
+    document.getElementById('modalEditarDocTitulo').textContent = 'Editar Consentimiento Informado';
+    document.getElementById('editConsentimientoFields').style.display = '';
+    document.getElementById('editCuerpo').value  = doc.cuerpoDelTexto      || '';
+    document.getElementById('editAcuerdo').value = doc.acuerdoConfidencial || '';
+  }
+
+  openModal('modalEditarDoc');
+}
+
+/* ===== VER DOCUMENTO ===== */
+function verDocumento(tipo) {
+  if (!expedienteActual) return;
+
+  let titulo, contenido;
+
+  if (tipo === 'entrevista') {
+    const doc = expedienteActual.entrevistaSocioeconomica;
+    if (!doc) return;
+    titulo = 'Entrevista Socioeconómica';
+    contenido = `
+      <div class="info-grid">
+        <div class="info-item"><div class="label">FECHA</div><div class="value">${fDate(doc.fecha)}</div></div>
+        <div class="info-item"><div class="label">ID DOCUMENTO</div><div class="value">#${esc(doc.idDocumento)}</div></div>
+      </div>
+      <div class="info-grid" style="margin-top:1.25rem;">
+        <div class="info-item"><div class="label">INGRESO FAMILIAR</div><div class="value">$${esc(doc.ingresoFamiliar)}</div></div>
+        <div class="info-item"><div class="label">GASTO ALIMENTACIÓN</div><div class="value">$${esc(doc.gastoAlimentacion)}</div></div>
+        <div class="info-item"><div class="label">LUGAR DE PROCEDENCIA</div><div class="value">${esc(doc.lugarProcedencia)}</div></div>
+      </div>
+      ${doc.vivienda ? `<div class="report-section" style="margin-top:1.25rem;"><div class="section-title">VIVIENDA</div><div class="report-text-block">${esc(doc.vivienda)}</div></div>` : ''}
+      <div class="info-item" style="margin-top:1.25rem;"><div class="label">ESTADO DE SALUD FAMILIAR</div><div class="value">${esc(doc.estadoSaludFamiliar)}</div></div>
+    `;
+  } else {
+    const doc = expedienteActual.informeConsentimiento;
+    if (!doc) return;
+    titulo = 'Consentimiento Informado';
+    contenido = `
+      <div class="info-grid">
+        <div class="info-item"><div class="label">FECHA</div><div class="value">${fDate(doc.fecha)}</div></div>
+        <div class="info-item"><div class="label">ID DOCUMENTO</div><div class="value">#${esc(doc.idDocumento)}</div></div>
+      </div>
+      <div class="report-section" style="margin-top:1.25rem;"><div class="section-title">CUERPO DEL TEXTO</div><div class="report-text-block">${esc(doc.cuerpoDelTexto)}</div></div>
+      <div class="report-section" style="margin-top:1rem;"><div class="section-title">ACUERDO DE CONFIDENCIALIDAD</div><div class="report-text-block">${esc(doc.acuerdoConfidencial)}</div></div>
+    `;
+  }
+
+  document.getElementById('modalVerDocTitulo').textContent = titulo;
+  document.getElementById('modalVerDocCuerpo').innerHTML = contenido;
+  openModal('modalVerDocumento');
 }

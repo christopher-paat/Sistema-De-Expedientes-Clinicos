@@ -19,6 +19,12 @@ public interface ExpedienteRepository extends JpaRepository<Expediente, Long> {
     @Query("SELECT e FROM Expediente e JOIN FETCH e.paciente WHERE e.terapeuta.idUsuario = :idTerapeuta")
     List<Expediente> findByTerapeutaPaciente(@Param("idTerapeuta") Long idTerapeuta);
 
+    // Todos los expedientes con sus documentos (para admin)
+    @Query("SELECT e FROM Expediente e JOIN FETCH e.paciente " +
+           "LEFT JOIN FETCH e.entrevistaSocioeconomica " +
+           "LEFT JOIN FETCH e.informeConsentimiento")
+    List<Expediente> findAllConDocumentos();
+
     // Expedientes con entrevista o consentimiento pendiente
     @Query("SELECT e FROM Expediente e JOIN FETCH e.paciente " +
            "LEFT JOIN e.entrevistaSocioeconomica ent " +

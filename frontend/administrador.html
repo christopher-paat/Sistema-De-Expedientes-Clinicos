@@ -153,6 +153,75 @@
   </div>
 </div>
 
+<!-- Modal: Editar Documento -->
+<div class="modal-overlay" id="modalEditarDoc">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalEditarDocTitulo"></h3>
+      <button class="btn-close" onclick="closeModal('modalEditarDoc')" aria-label="Cerrar">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <!-- Campos Entrevista Socioeconómica -->
+      <div id="editEntrevistaFields" style="display:none;">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ingreso familiar <span class="req">*</span></label>
+            <input type="number" id="editIngreso" min="0" step="0.01" placeholder="Ej. 8500.00" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label>Gasto alimentación <span class="req">*</span></label>
+            <input type="number" id="editGasto" min="0" step="0.01" placeholder="Ej. 2000.00" autocomplete="off" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Lugar de procedencia <span class="req">*</span></label>
+          <input type="text" id="editLugar" maxlength="100" placeholder="Ciudad, Estado" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label>Vivienda</label>
+          <textarea id="editVivienda" rows="2" maxlength="1000" placeholder="Tipo, condiciones..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Estado de salud familiar <span class="req">*</span></label>
+          <input type="text" id="editSalud" maxlength="50" placeholder="Ej. Sin enfermedades crónicas" autocomplete="off" />
+        </div>
+      </div>
+      <!-- Campos Consentimiento Informado -->
+      <div id="editConsentimientoFields" style="display:none;">
+        <div class="form-group">
+          <label>Cuerpo del texto <span class="req">*</span></label>
+          <textarea id="editCuerpo" rows="4" maxlength="2000" placeholder="Texto del acuerdo de tratamiento..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Acuerdo de confidencialidad <span class="req">*</span></label>
+          <textarea id="editAcuerdo" rows="3" maxlength="1000" placeholder="Cláusulas de confidencialidad..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div id="mslEditarDoc" class="modal-status-line"></div>
+      <button class="btn btn-secondary" onclick="closeModal('modalEditarDoc')">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarEdicion">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ver Documento -->
+<div class="modal-overlay" id="modalVerDocumento">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalVerDocTitulo"></h3>
+      <button class="btn-close" onclick="closeModal('modalVerDocumento')" aria-label="Cerrar">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div id="modalVerDocCuerpo"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalVerDocumento')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <script src="js/api.js"></script>
@@ -162,6 +231,54 @@ auth.guard();
 </script>
 <script src="js/administrador.js"></script>
 <script>
+/* Guardar edición de documento */
+document.getElementById('btnGuardarEdicion').addEventListener('click', async function () {
+  var btn = this;
+  var msl = document.getElementById('mslEditarDoc');
+  var body, url;
+
+  if (tipoDocEditar === 'entrevista') {
+    var ingreso  = document.getElementById('editIngreso').value.trim();
+    var gasto    = document.getElementById('editGasto').value.trim();
+    var lugar    = document.getElementById('editLugar').value.trim();
+    var vivienda = document.getElementById('editVivienda').value.trim();
+    var salud    = document.getElementById('editSalud').value.trim();
+    if (!ingreso || !gasto || !lugar || !salud) {
+      msl.textContent = 'Completa todos los campos obligatorios';
+      msl.className = 'modal-status-line msl-error';
+      return;
+    }
+    body = { ingresoFamiliar: parseFloat(ingreso), gastoAlimentacion: parseFloat(gasto),
+             lugarProcedencia: lugar, vivienda: vivienda || null, estadoSaludFamiliar: salud };
+    url = '/expedientes/' + idExpedienteEditar + '/entrevista-socioeconomica';
+  } else {
+    var cuerpo  = document.getElementById('editCuerpo').value.trim();
+    var acuerdo = document.getElementById('editAcuerdo').value.trim();
+    if (!cuerpo || !acuerdo) {
+      msl.textContent = 'Completa todos los campos obligatorios';
+      msl.className = 'modal-status-line msl-error';
+      return;
+    }
+    body = { cuerpoDelTexto: cuerpo, acuerdoConfidencial: acuerdo };
+    url = '/expedientes/' + idExpedienteEditar + '/consentimiento';
+  }
+
+  msl.textContent = 'Guardando...';
+  msl.className = 'modal-status-line msl-loading';
+  setLoading(btn, true);
+  try {
+    await api.put(url, body);
+    closeModal('modalEditarDoc');
+    msl.textContent = '';
+    toast('Documento actualizado exitosamente', 'success');
+    await selectPaciente(idExpedienteEditar, null);
+  } catch (e) {
+    msl.textContent = e.message;
+    msl.className = 'modal-status-line msl-error';
+    setLoading(btn, false);
+  }
+});
+
 /* Limpiar filtros de auditoría */
 (function () {
   document.getElementById('btnLimpiarAuditoria').addEventListener('click', function () {

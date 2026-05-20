@@ -733,7 +733,7 @@ POST /api/v1/expedientes/{idExpediente}/consentimiento
 
 ---
 
-### Consultar expedientes con documentos pendientes
+### Consultar todos los expedientes
 
 ```
 GET /api/v1/expedientes/pendientes-documentos
@@ -750,7 +750,7 @@ GET /api/v1/expedientes/pendientes-documentos
   {
     "idExpediente": 45,
     "nombrePaciente": "María López García",
-    "faltaEntrevista": true,
+    "faltaEntrevista": false,
     "faltaConsentimiento": false
   },
   {
@@ -773,11 +773,159 @@ GET /api/v1/expedientes/pendientes-documentos
 
 | Código | Significado |
 |--------|-------------|
-| 200    | Lista retornada exitosamente (puede ser vacía `[]` si todos los expedientes están completos) |
+| 200    | Lista retornada exitosamente (puede ser vacía `[]` si no hay expedientes) |
 | 403    | El usuario autenticado no tiene rol `ADMINISTRADOR` |
 
-> **Nota de privacidad:** Este endpoint retorna únicamente información administrativa no sensible (identificadores y nombres de pacientes). No expone datos clínicos, socioeconómicos, ni contenido de documentos.  
-> **Auditoría:** genera un registro `CONSULTAR_EXPEDIENTES_PENDIENTES`.
+> **Nota:** Retorna **todos** los expedientes del sistema, independientemente de si tienen documentos pendientes. El filtrado por pendientes se realiza en el cliente usando los flags `faltaEntrevista` y `faltaConsentimiento`.  
+> **Auditoría:** genera un registro `CONSULTAR_TODOS_EXPEDIENTES`.
+
+---
+
+### Consultar detalle completo de expediente (administrador)
+
+```
+GET /api/v1/expedientes/{idExpediente}/detalle-admin
+```
+
+**Autorización:** `ADMINISTRADOR`
+
+**Parámetros de ruta:**
+
+| Parámetro    | Tipo | Descripción |
+|--------------|------|-------------|
+| idExpediente | Long | Identificador del expediente clínico |
+
+**Response 200 OK:**
+
+```json
+{
+  "idExpediente": 45,
+  "estado": "ACTIVO",
+  "fechaProxCita": "2026-05-10T09:00:00Z",
+  "nombrePaciente": "María López García",
+  "entrevistaSocioeconomica": {
+    "idDocumento": 101,
+    "idExpediente": 45,
+    "fecha": "2026-04-29",
+    "ingresoFamiliar": 8500.00,
+    "gastoAlimentacion": 2000.00,
+    "lugarProcedencia": "Ciudad de México, CDMX",
+    "vivienda": "Casa propia de 3 habitaciones.",
+    "estadoSaludFamiliar": "2 enfermos crónicos"
+  },
+  "informeConsentimiento": {
+    "idDocumento": 102,
+    "idExpediente": 45,
+    "fecha": "2026-04-29",
+    "cuerpoDelTexto": "Texto legal completo...",
+    "acuerdoConfidencial": "El personal clínico se compromete a proteger la privacidad..."
+  }
+}
+```
+
+Los campos `entrevistaSocioeconomica` e `informeConsentimiento` son `null` si aún no han sido registrados.
+
+**Códigos de respuesta:**
+
+| Código | Significado |
+|--------|-------------|
+| 200    | Detalle retornado exitosamente |
+| 403    | El usuario autenticado no tiene rol `ADMINISTRADOR` |
+| 404    | El expediente no existe |
+
+> **Auditoría:** genera un registro `CONSULTAR_TODOS_EXPEDIENTES`.
+
+---
+
+### Actualizar entrevista socioeconómica
+
+```
+PUT /api/v1/expedientes/{idExpediente}/entrevista-socioeconomica
+```
+
+**Autorización:** `ADMINISTRADOR`
+
+**Parámetros de ruta:**
+
+| Parámetro    | Tipo | Descripción |
+|--------------|------|-------------|
+| idExpediente | Long | Identificador del expediente clínico |
+
+**Request body:**
+
+```json
+{
+  "ingresoFamiliar": 9000.00,
+  "gastoAlimentacion": 2200.00,
+  "lugarProcedencia": "Guadalajara, Jalisco",
+  "vivienda": "Departamento rentado de 2 habitaciones.",
+  "estadoSaludFamiliar": "Sin enfermedades crónicas"
+}
+```
+
+| Campo               | Tipo    | Requerido | Restricciones |
+|---------------------|---------|-----------|---------------|
+| ingresoFamiliar     | Decimal | Sí        | >= 0 |
+| gastoAlimentacion   | Decimal | Sí        | >= 0 |
+| lugarProcedencia    | String  | Sí        | Máximo 100 caracteres |
+| vivienda            | String  | No        | Máximo 1000 caracteres |
+| estadoSaludFamiliar | String  | Sí        | Máximo 50 caracteres |
+
+**Response 200 OK:** misma estructura que `POST` en CU-11.
+
+**Códigos de respuesta:**
+
+| Código | Significado |
+|--------|-------------|
+| 200    | Entrevista actualizada exitosamente |
+| 400    | Datos inválidos o faltantes |
+| 403    | El usuario autenticado no tiene rol `ADMINISTRADOR` |
+| 404    | El expediente o la entrevista no existen |
+
+> **Auditoría:** genera un registro `REGISTRAR_ENTREVISTA`.
+
+---
+
+### Actualizar consentimiento informado
+
+```
+PUT /api/v1/expedientes/{idExpediente}/consentimiento
+```
+
+**Autorización:** `ADMINISTRADOR`
+
+**Parámetros de ruta:**
+
+| Parámetro    | Tipo | Descripción |
+|--------------|------|-------------|
+| idExpediente | Long | Identificador del expediente clínico |
+
+**Request body:**
+
+```json
+{
+  "cuerpoDelTexto": "Texto legal actualizado con los términos y condiciones del tratamiento...",
+  "acuerdoConfidencial": "Acuerdo de confidencialidad actualizado conforme a normativa vigente."
+}
+```
+
+| Campo               | Tipo   | Requerido | Restricciones |
+|---------------------|--------|-----------|---------------|
+| cuerpoDelTexto      | String | Sí        | No vacío, máximo 2000 caracteres |
+| acuerdoConfidencial | String | Sí        | No vacío, máximo 1000 caracteres |
+
+**Response 200 OK:** misma estructura que `POST` en CU-12.
+
+**Códigos de respuesta:**
+
+| Código | Significado |
+|--------|-------------|
+| 200    | Consentimiento actualizado exitosamente |
+| 400    | Datos inválidos o faltantes |
+| 403    | El usuario autenticado no tiene rol `ADMINISTRADOR` |
+| 404    | El expediente o el consentimiento no existen |
+
+> **Auditoría:** genera un registro `REGISTRAR_CONSENTIMIENTO`.
 
 ---
 
@@ -934,6 +1082,9 @@ GET /api/v1/auditoria
 | CU-11       | POST   | `/api/v1/expedientes/{idExpediente}/entrevista-socioeconomica`| `ADMINISTRADOR`                 |
 | CU-12       | POST   | `/api/v1/expedientes/{idExpediente}/consentimiento`           | `ADMINISTRADOR`                 |
 | —           | GET    | `/api/v1/expedientes/pendientes-documentos`                   | `ADMINISTRADOR`                 |
+| —           | GET    | `/api/v1/expedientes/{idExpediente}/detalle-admin`            | `ADMINISTRADOR`                 |
+| —           | PUT    | `/api/v1/expedientes/{idExpediente}/entrevista-socioeconomica`| `ADMINISTRADOR`                 |
+| —           | PUT    | `/api/v1/expedientes/{idExpediente}/consentimiento`           | `ADMINISTRADOR`                 |
 | —           | GET    | `/api/v1/terapeutas`                                          | `ADMINISTRADOR`                 |
 | —           | GET    | `/api/v1/supervisores`                                        | `ADMINISTRADOR`                 |
 | Auditoría   | GET    | `/api/v1/auditoria`                                           | `ADMINISTRADOR`                 |
@@ -976,6 +1127,7 @@ Cada acción de la tabla siguiente corresponde a un valor del ENUM `accion` en `
 | `ENVIAR_REPORTE`                  | CU-04 |
 | `APROBAR_REPORTE`                 | CU-08 |
 | `RECHAZAR_REPORTE`                | CU-09 |
-| `CONSULTAR_EXPEDIENTES_PENDIENTES`| Endpoint `/api/v1/expedientes/pendientes-documentos` |
+| `CONSULTAR_EXPEDIENTES_PENDIENTES`| Uso legado — valor existente en BD, ya no se genera en nuevos registros |
+| `CONSULTAR_TODOS_EXPEDIENTES`     | `/pendientes-documentos` · `/detalle-admin` — retorna todos los expedientes |
 | `CONSULTAR_TERAPEUTAS`            | Endpoint `/api/v1/terapeutas` |
 | `CONSULTAR_SUPERVISORES`          | Endpoint `/api/v1/supervisores` |

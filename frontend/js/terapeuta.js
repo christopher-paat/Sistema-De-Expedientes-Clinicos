@@ -30,7 +30,7 @@ function sesionBadge(estado) {
 }
 
 /* ===== PACIENTES ===== */
-document.getElementById('btnLoadPacientes').addEventListener('click', loadPacientes);
+window.addEventListener('DOMContentLoaded', loadPacientes);
 
 async function loadPacientes() {
   showLoadingPanel('Cargando pacientes...');
@@ -224,22 +224,19 @@ function renderTabInfoBasica(exp) {
       <div class="exp-section-header" style="border-bottom:1px solid #F1F5F9;">
         <div style="padding:1rem 1.25rem 0.875rem;">
           <h3 style="font-size:1.125rem;font-weight:700;color:#1E293B;">${esc(p.nombreCompleto)}</h3>
-          <p style="font-size:0.8125rem;color:#94A3B8;margin-top:0.2rem;">Datos de identificación del paciente</p>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="info-grid">
-          <div class="info-item">
-            <div class="label">EDAD</div>
-            <div class="value">${esc(p.edad)} años</div>
-          </div>
-          <div class="info-item">
-            <div class="label">CORREO ELECTRÓNICO</div>
-            <div class="value">${esc(p.correoElectronico) || '—'}</div>
-          </div>
-          <div class="info-item">
-            <div class="label">NÚMERO TELEFÓNICO</div>
-            <div class="value">${esc(p.numeroTelefonico) || '—'}</div>
+          <div class="info-grid" style="margin-top:0.5rem;">
+            <div class="info-item">
+              <div class="label">EDAD</div>
+              <div class="value">${esc(p.edad)} años</div>
+            </div>
+            <div class="info-item">
+              <div class="label">CORREO ELECTRÓNICO</div>
+              <div class="value">${esc(p.correoElectronico) || '—'}</div>
+            </div>
+            <div class="info-item">
+              <div class="label">NÚMERO TELEFÓNICO</div>
+              <div class="value">${esc(p.numeroTelefonico) || '—'}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -294,10 +291,10 @@ function renderTabInfoBasica(exp) {
 function renderTabDocumentos(exp) {
   const registrados = [
     exp.entrevistaSocioeconomica
-      ? { nombre: 'Entrevista Socioeconómica', desc: 'Evaluación inicial de contexto social, económico y familiar del paciente', doc: exp.entrevistaSocioeconomica, estado: 'Registrado' }
+      ? { nombre: 'Entrevista Socioeconómica', doc: exp.entrevistaSocioeconomica, tipo: 'entrevista' }
       : null,
     exp.informeConsentimiento
-      ? { nombre: 'Consentimiento Informado', desc: 'Documento de autorización para tratamiento psicológico', doc: exp.informeConsentimiento, estado: 'Firmado' }
+      ? { nombre: 'Consentimiento Informado', doc: exp.informeConsentimiento, tipo: 'consentimiento' }
       : null,
   ].filter(Boolean);
 
@@ -330,31 +327,10 @@ function renderTabDocumentos(exp) {
     ${registrados.map(d => `
       <div class="doc-card card" style="margin-bottom:1rem;">
         <div class="doc-card-body">
-          <div class="doc-card-left">
-            <div class="doc-card-icon">
-              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-            </div>
-          </div>
           <div class="doc-card-content">
-            <div class="doc-card-top">
-              <div>
-                <div class="doc-card-name">${esc(d.nombre)}</div>
-                <div class="doc-card-desc">${esc(d.desc)}</div>
-              </div>
-              <span class="badge badge-aprobado">${esc(d.estado)}</span>
-            </div>
-            <div class="doc-card-meta">
-              <div class="doc-meta-item">
-                <div class="label">FECHA DE REGISTRO</div>
-                <div class="value">${fDate(d.doc.fecha)}</div>
-              </div>
-              <div class="doc-meta-item">
-                <div class="label">ID DOCUMENTO</div>
-                <div class="value">#${esc(d.doc.idDocumento)}</div>
-              </div>
-            </div>
-            <div class="doc-card-actions">
-              <button class="btn btn-secondary btn-sm">
+            <div class="doc-card-name">${esc(d.nombre)}</div>
+            <div class="doc-card-actions" style="margin-top:0.625rem;">
+              <button class="btn btn-secondary btn-sm" onclick="verDocumento('${d.tipo}')">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 Ver Documento
               </button>
@@ -644,6 +620,7 @@ document.getElementById('btnGuardarReporte').addEventListener('click', async () 
   const comentarios   = document.getElementById('rfComentarios').value.trim();
 
   if (!fechaSesion)   { setModalStatus('La fecha de sesión es obligatoria', 'error'); return; }
+  if (!duracion)      { setModalStatus('La duración de la sesión es obligatoria', 'error'); return; }
   if (!observaciones) { setModalStatus('Las observaciones clínicas son obligatorias', 'error'); return; }
 
   const body = {
@@ -693,4 +670,46 @@ function showErrorPanel(msg) {
     <div class="card"><div class="card-body">
       <div class="alert alert-error">${esc(msg)}</div>
     </div></div>`;
+}
+
+/* ===== VER DOCUMENTO ===== */
+function verDocumento(tipo) {
+  if (!expedienteActual) return;
+
+  let titulo, contenido;
+
+  if (tipo === 'entrevista') {
+    const doc = expedienteActual.entrevistaSocioeconomica;
+    if (!doc) return;
+    titulo = 'Entrevista Socioeconómica';
+    contenido = `
+      <div class="info-grid">
+        <div class="info-item"><div class="label">FECHA</div><div class="value">${fDate(doc.fecha)}</div></div>
+        <div class="info-item"><div class="label">ID DOCUMENTO</div><div class="value">#${esc(doc.idDocumento)}</div></div>
+      </div>
+      <div class="info-grid" style="margin-top:1.25rem;">
+        <div class="info-item"><div class="label">INGRESO FAMILIAR</div><div class="value">$${esc(doc.ingresoFamiliar)}</div></div>
+        <div class="info-item"><div class="label">GASTO ALIMENTACIÓN</div><div class="value">$${esc(doc.gastoAlimentacion)}</div></div>
+        <div class="info-item"><div class="label">LUGAR DE PROCEDENCIA</div><div class="value">${esc(doc.lugarProcedencia)}</div></div>
+      </div>
+      ${doc.vivienda ? `<div class="report-section" style="margin-top:1.25rem;"><div class="section-title">VIVIENDA</div><div class="report-text-block">${esc(doc.vivienda)}</div></div>` : ''}
+      <div class="info-item" style="margin-top:1.25rem;"><div class="label">ESTADO DE SALUD FAMILIAR</div><div class="value">${esc(doc.estadoSaludFamiliar)}</div></div>
+    `;
+  } else {
+    const doc = expedienteActual.informeConsentimiento;
+    if (!doc) return;
+    titulo = 'Consentimiento Informado';
+    contenido = `
+      <div class="info-grid">
+        <div class="info-item"><div class="label">FECHA</div><div class="value">${fDate(doc.fecha)}</div></div>
+        <div class="info-item"><div class="label">ID DOCUMENTO</div><div class="value">#${esc(doc.idDocumento)}</div></div>
+      </div>
+      <div class="report-section" style="margin-top:1.25rem;"><div class="section-title">CUERPO DEL TEXTO</div><div class="report-text-block">${esc(doc.cuerpoDelTexto)}</div></div>
+      <div class="report-section" style="margin-top:1rem;"><div class="section-title">ACUERDO DE CONFIDENCIALIDAD</div><div class="report-text-block">${esc(doc.acuerdoConfidencial)}</div></div>
+    `;
+  }
+
+  document.getElementById('modalVerDocTitulo').textContent = titulo;
+  document.getElementById('modalVerDocCuerpo').innerHTML = contenido;
+  openModal('modalVerDocumento');
 }

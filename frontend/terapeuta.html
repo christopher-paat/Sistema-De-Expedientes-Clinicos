@@ -29,25 +29,10 @@
   <div class="container">
 
     <div id="contentPanel">
-      <div class="card">
-        <div class="card-body">
-          <div class="empty-state" style="padding:3rem 2rem;">
-            <div class="empty-icon">
-              <svg width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-              </svg>
-            </div>
-            <p style="margin-bottom:1.25rem;">Carga tus pacientes asignados para comenzar</p>
-            <button class="btn btn-primary" id="btnLoadPacientes">
-              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-              Cargar mis pacientes
-            </button>
-          </div>
-        </div>
-      </div>
+      <div class="card"><div class="card-body"><div class="empty-state">
+        <span class="spinner"></span>
+        <p style="margin-top:1rem;">Cargando pacientes...</p>
+      </div></div></div>
     </div>
 
   </div>
@@ -68,21 +53,19 @@
             <input type="date" id="rfFechaSesion" required />
           </div>
           <div class="form-group">
-            <label for="rfDuracion">Duración (minutos)</label>
-            <input type="number" id="rfDuracion" min="1" max="480" placeholder="Ej. 60" />
-            <div class="form-hint">Opcional · Máx. 480 min.</div>
+            <label for="rfDuracion">Duración (minutos) <span class="req">*</span></label>
+            <input type="number" id="rfDuracion" min="1" max="480" placeholder="Ej. 60" required />
           </div>
         </div>
         <div class="form-group">
           <label for="rfObservaciones">Observaciones clínicas <span class="req">*</span></label>
-          <textarea id="rfObservaciones" rows="5"
+          <textarea id="rfObservaciones" rows="5" maxlength="2000"
             placeholder="Describe el desarrollo de la sesión, avances, dificultades y objetivos trabajados..."
             required></textarea>
-          <div class="char-count" id="cuentaObservaciones">0 caracteres</div>
         </div>
         <div class="form-group">
           <label for="rfComentarios">Comentarios del terapeuta</label>
-          <textarea id="rfComentarios" rows="3" placeholder="Notas adicionales, recomendaciones o seguimiento..."></textarea>
+          <textarea id="rfComentarios" rows="3" maxlength="1000" placeholder="Notas adicionales, recomendaciones o seguimiento..."></textarea>
         </div>
       </form>
     </div>
@@ -90,6 +73,22 @@
       <div id="mslReporte" class="modal-status-line"></div>
       <button class="btn btn-secondary" onclick="closeModal('modalReporte')">Cancelar</button>
       <button class="btn btn-primary" id="btnGuardarReporte">Guardar Reporte</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ver Documento -->
+<div class="modal-overlay" id="modalVerDocumento">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalVerDocTitulo"></h3>
+      <button class="btn-close" onclick="closeModal('modalVerDocumento')" aria-label="Cerrar">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div id="modalVerDocCuerpo"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modalVerDocumento')">Cerrar</button>
     </div>
   </div>
 </div>
@@ -102,28 +101,5 @@
 auth.guard();
 </script>
 <script src="js/terapeuta.js"></script>
-<script>
-/* Contador de caracteres para observaciones clínicas */
-(function () {
-  var ta      = document.getElementById('rfObservaciones');
-  var counter = document.getElementById('cuentaObservaciones');
-
-  function update() {
-    var n = ta.value.length;
-    counter.textContent = n + ' caracter' + (n === 1 ? '' : 'es');
-    counter.style.color = n === 0 ? '#DC2626' : n < 20 ? '#D97706' : '#94A3B8';
-  }
-
-  ta.addEventListener('input', update);
-
-  var modal    = document.getElementById('modalReporte');
-  var observer = new MutationObserver(function () {
-    if (modal.classList.contains('open')) update();
-  });
-  observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
-
-  update();
-})();
-</script>
 </body>
 </html>

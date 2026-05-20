@@ -2,6 +2,7 @@ package com.clinica.expedientes.controller;
 
 import com.clinica.expedientes.dto.request.*;
 import com.clinica.expedientes.dto.response.*;
+import com.clinica.expedientes.dto.response.ExpedienteAdminDetalleResponse;
 import com.clinica.expedientes.service.AdministradorService;
 import com.clinica.expedientes.service.TerapeutaService;
 import jakarta.validation.Valid;
@@ -28,6 +29,32 @@ public class ExpedienteController {
     public ResponseEntity<List<ExpedientePendienteResponse>> getExpedientesPendientes(
             @RequestHeader("X-User-Id") Long userId) {
         return ResponseEntity.ok(administradorService.getExpedientesPendientes(userId));
+    }
+
+    // Admin: detalle completo de expediente (con documentos completos)
+    @GetMapping("/{idExpediente}/detalle-admin")
+    public ResponseEntity<ExpedienteAdminDetalleResponse> getExpedienteDetalleAdmin(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long idExpediente) {
+        return ResponseEntity.ok(administradorService.getExpedienteDetalleAdmin(userId, idExpediente));
+    }
+
+    // Admin: actualizar entrevista socioeconómica existente
+    @PutMapping("/{idExpediente}/entrevista-socioeconomica")
+    public ResponseEntity<EntrevistaResponse> actualizarEntrevista(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long idExpediente,
+            @Valid @RequestBody RegistrarEntrevistaRequest req) {
+        return ResponseEntity.ok(administradorService.actualizarEntrevista(userId, idExpediente, req));
+    }
+
+    // Admin: actualizar consentimiento informado existente
+    @PutMapping("/{idExpediente}/consentimiento")
+    public ResponseEntity<ConsentimientoResponse> actualizarConsentimiento(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long idExpediente,
+            @Valid @RequestBody RegistrarConsentimientoRequest req) {
+        return ResponseEntity.ok(administradorService.actualizarConsentimiento(userId, idExpediente, req));
     }
 
     // CU-02: Acceder a expediente clínico (TERAPEUTA con ABAC)

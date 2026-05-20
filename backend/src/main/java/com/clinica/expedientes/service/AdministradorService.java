@@ -54,7 +54,7 @@ public class AdministradorService {
     public List<ExpedientePendienteResponse> getExpedientesPendientes(Long userId) {
         resolverAdministrador(userId);
 
-        List<ExpedientePendienteResponse> resultado = expedienteRepo.findConDocumentosPendientes().stream()
+        List<ExpedientePendienteResponse> resultado = expedienteRepo.findAllConDocumentos().stream()
                 .map(e -> new ExpedientePendienteResponse(
                         e.getIdExpediente(),
                         e.getPaciente().getNombreCompleto(),
@@ -63,7 +63,106 @@ public class AdministradorService {
                 .collect(Collectors.toList());
 
         auditoriaService.registrar(userId, RolUsuario.ADMINISTRADOR,
-                AccionAuditoria.CONSULTAR_EXPEDIENTES_PENDIENTES,
+                AccionAuditoria.CONSULTAR_TODOS_EXPEDIENTES,
+                "Expediente", null, ResultadoAuditoria.PERMITIDO);
+
+        return resultado;
+    }
+
+    @Transactional(readOnly = true)
+    public ExpedienteAdminDetalleResponse getExpedienteDetalleAdmin(Long userId, Long idExpediente) {
+        resolverAdministrador(userId);
+
+        Expediente exp = expedienteRepo.findById(idExpediente)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Expediente no encontrado: " + idExpediente));
+
+        auditoriaService.registrar(userId, RolUsuario.ADMINISTRADOR, AccionAuditoria.CONSULTAR_TODOS_EXPEDIENTES,
+                "Expediente", String.valueOf(idExpediente), ResultadoAuditoria.PERMITIDO);
+
+        EntrevistaResponse entrevista = null;
+        if (exp.getEntrevistaSocioeconomica() != null) {
+            EntrevistaSocioeconomica e = exp.getEntrevistaSocioeconomica();
+            entrevista = new EntrevistaResponse(e.getIdDocumento(), idExpediente, e.getFecha(),
+                    e.getIngresoFamiliar(), e.getGastoAlimentacion(),
+                    e.getLugarProcedencia(), e.getVivienda(), e.getEstadoSaludFamiliar());
+        }
+
+        ConsentimientoResponse consentimiento = null;
+        if (exp.getInformeConsentimiento() != null) {
+            InformeConsentimiento c = exp.getInformeConsentimiento();
+            consentimiento = new ConsentimientoResponse(c.getIdDocumento(), idExpediente, c.getFecha(),
+                    c.getCuerpoDelTexto(), c.getAcuerdoConfidencial());
+        }
+
+        return new ExpedienteAdminDetalleResponse(exp.getIdExpediente(), exp.getEstado().name(),
+                exp.getFechaProxCita(), exp.getPaciente().getNombreCompleto(), entrevista, consentimiento);
+    }
+
+    @Transactional
+    public EntrevistaResponse actualizarEntrevista(Long userId, Long idExpediente,
+                                                    RegistrarEntrevistaRequest req) {
+        resolverAdministrador(userId);
+
+        Expediente exp = expedienteRepo.findById(idExpediente)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Expediente no encontrado: " + idExpediente));
+
+        EntrevistaSocioeconomica entrevista = exp.getEntrevistaSocioeconomica();
+        if (entrevista == null)
+            throw new RecursoNoEncontradoException("No existe entrevista para el expediente: " + idExpediente);
+
+        entrevista.setIngresoFamiliar(req.getIngresoFamiliar());
+        entrevista.setGastoAlimentacion(req.getGastoAlimentacion());
+        entrevista.setLugarProcedencia(req.getLugarProcedencia());
+        entrevista.setVivienda(req.getVivienda());
+        entrevista.setEstadoSaludFamiliar(req.getEstadoSaludFamiliar());
+
+        EntrevistaSocioeconomica saved = entrevistaRepo.save(entrevista);
+
+        auditoriaService.registrar(userId, RolUsuario.ADMINISTRADOR, AccionAuditoria.REGISTRAR_ENTREVISTA,
+                "EntrevistaSocioeconomica", String.valueOf(saved.getIdDocumento()), ResultadoAuditoria.PERMITIDO);
+
+        return new EntrevistaResponse(saved.getIdDocumento(), idExpediente, saved.getFecha(),
+                saved.getIngresoFamiliar(), saved.getGastoAlimentacion(),
+                saved.getLugarProcedencia(), saved.getVivienda(), saved.getEstadoSaludFamiliar());
+    }
+
+    @Transactional
+    public ConsentimientoResponse actualizarConsentimiento(Long userId, Long idExpediente,
+                                                            RegistrarConsentimientoRequest req) {
+        resolverAdministrador(userId);
+
+        Expediente exp = expedienteRepo.findById(idExpediente)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Expediente no encontrado: " + idExpediente));
+
+        InformeConsentimiento consentimiento = exp.getInformeConsentimiento();
+        if (consentimiento == null)
+            throw new RecursoNoEncontradoException("No existe consentimiento para el expediente: " + idExpediente);
+
+        consentimiento.setCuerpoDelTexto(req.getCuerpoDelTexto());
+        consentimiento.setAcuerdoConfidencial(req.getAcuerdoConfidencial());
+
+        InformeConsentimiento saved = consentimientoRepo.save(consentimiento);
+
+        auditoriaService.registrar(userId, RolUsuario.ADMINISTRADOR, AccionAuditoria.REGISTRAR_CONSENTIMIENTO,
+                "InformeConsentimiento", String.valueOf(saved.getIdDocumento()), ResultadoAuditoria.PERMITIDO);
+
+        return new ConsentimientoResponse(saved.getIdDocumento(), idExpediente, saved.getFecha(),
+                saved.getCuerpoDelTexto(), saved.getAcuerdoConfidencial());
+    }
+
+    public List<ExpedientePendienteResponse> getTodosExpedientes(Long userId) {
+        resolverAdministrador(userId);
+
+        List<ExpedientePendienteResponse> resultado = expedienteRepo.findAllConDocumentos().stream()
+                .map(e -> new ExpedientePendienteResponse(
+                        e.getIdExpediente(),
+                        e.getPaciente().getNombreCompleto(),
+                        e.getEntrevistaSocioeconomica() == null,
+                        e.getInformeConsentimiento() == null))
+                .collect(Collectors.toList());
+
+        auditoriaService.registrar(userId, RolUsuario.ADMINISTRADOR,
+                AccionAuditoria.CONSULTAR_EXPEDIENTE,
                 "Expediente", null, ResultadoAuditoria.PERMITIDO);
 
         return resultado;
