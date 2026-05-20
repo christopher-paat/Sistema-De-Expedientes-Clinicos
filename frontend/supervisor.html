@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Supervisor — Expedientes Clínicos</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 </head>
 <body>
 
@@ -116,7 +117,7 @@ auth.guard();
     idAprobarPendiente = parseInt(match[0], 10);
 
     document.getElementById('confirmAprobarMsg').textContent =
-      '¿Confirmar aprobación del reporte #' + idAprobarPendiente + '? Esta acción no se puede deshacer.';
+      '¿Confirmar aprobación del ' + folioRep(idAprobarPendiente) + '? Esta acción no se puede deshacer.';
     openModal('modalAprobar');
   }, true);
 

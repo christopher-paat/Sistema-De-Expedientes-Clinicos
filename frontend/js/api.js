@@ -57,7 +57,15 @@ function toast(msg, type = 'info') {
 
 /* ===== MODAL ===== */
 function openModal(id) {
-  document.getElementById(id)?.classList.add('open');
+  const overlay = document.getElementById(id);
+  if (!overlay) return;
+  const modal = overlay.querySelector('.modal');
+  if (modal) {
+    modal.style.animation = 'none';
+    void modal.offsetWidth;
+    modal.style.animation = '';
+  }
+  overlay.classList.add('open');
 }
 function closeModal(id) {
   document.getElementById(id)?.classList.remove('open');
@@ -94,6 +102,10 @@ function badge(estado) {
 function esc(s) {
   if (s == null) return '';
   return String(s)
+    /* Corrección de charset: sustituciones documentadas en la especificación UI/UX */
+    .replace(/¡/g, 'í')
+    .replace(/¢/g, 'ó')
+    /* Escape HTML */
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -127,6 +139,14 @@ function initTabs(containerSelector) {
 
 window.addEventListener('DOMContentLoaded', () => {});
 
+/* ===== FOLIOS CLÍNICOS ===== */
+function folioExp(id) {
+  return 'EXP-' + new Date().getFullYear() + '-' + String(id).padStart(4, '0');
+}
+function folioRep(id) {
+  return 'REP-' + new Date().getFullYear() + '-' + String(id).padStart(4, '0');
+}
+
 /* ===== AUTOCOMPLETE ===== */
 /*
  * inputEl   – el <input type="text"> que el usuario escribe
@@ -137,8 +157,9 @@ window.addEventListener('DOMContentLoaded', () => {});
  * Navegación: ↑ ↓ para moverse, Tab/Enter para seleccionar, Escape para cerrar
  * Tab sin elemento resaltado completa con la primera sugerencia visible.
  */
-function initAutocomplete(inputEl, listEl, getOpciones, onCambio) {
+function initAutocomplete(inputEl, listEl, getOpciones, onCambio, minChars) {
   var idx = -1;
+  var min = minChars || 1;
 
   function items() { return listEl.querySelectorAll('.autocomplete-item'); }
 
@@ -152,7 +173,7 @@ function initAutocomplete(inputEl, listEl, getOpciones, onCambio) {
   function mostrar() {
     var q = inputEl.value.trim().toLowerCase();
     var opts = getOpciones().filter(function (o) { return o.toLowerCase().includes(q); });
-    if (!q || opts.length === 0) { cerrar(); return; }
+    if (q.length < min || opts.length === 0) { cerrar(); return; }
     listEl.innerHTML = opts.map(function (m) {
       return '<div class="autocomplete-item">' + esc(m) + '</div>';
     }).join('');
@@ -195,4 +216,114 @@ function initAutocomplete(inputEl, listEl, getOpciones, onCambio) {
 
   /* Cerrar al perder foco, con delay para permitir clicks en el dropdown */
   inputEl.addEventListener('blur', function () { setTimeout(cerrar, 160); });
+}
+
+/* ===== ACCENT-INSENSITIVE NORMALIZATION ===== */
+function removerTildes(texto) {
+  if (!texto) return '';
+  return texto.normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+/* ===== CUSTOM SELECT ===== */
+function initCustomSelect(selectEl) {
+  var wrap = document.createElement('div');
+  wrap.className = 'custom-select-wrap';
+  selectEl.insertAdjacentElement('beforebegin', wrap);
+  wrap.appendChild(selectEl);
+  selectEl.style.display = 'none';
+
+  var trigger = document.createElement('div');
+  trigger.className = 'custom-select-trigger';
+  trigger.tabIndex = 0;
+  if (selectEl.style.minWidth) trigger.style.minWidth = selectEl.style.minWidth;
+
+  var labelSpan = document.createElement('span');
+  labelSpan.className = 'cst-label';
+
+  var arrowSpan = document.createElement('span');
+  arrowSpan.className = 'cst-arrow';
+  arrowSpan.innerHTML = '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>';
+
+  trigger.appendChild(labelSpan);
+  trigger.appendChild(arrowSpan);
+
+  var list = document.createElement('ul');
+  list.className = 'custom-select-list';
+
+  wrap.appendChild(trigger);
+  wrap.appendChild(list);
+
+  var isOpen = false;
+
+  function syncLabel() {
+    var opt = selectEl.options[selectEl.selectedIndex];
+    labelSpan.textContent = opt ? opt.text : '';
+    list.querySelectorAll('li').forEach(function (li, i) {
+      li.classList.toggle('selected', i === selectEl.selectedIndex);
+    });
+  }
+
+  function buildOptions() {
+    list.innerHTML = '';
+    Array.from(selectEl.options).forEach(function (opt, i) {
+      var li = document.createElement('li');
+      li.textContent = opt.text;
+      if (i === selectEl.selectedIndex) li.classList.add('selected');
+      li.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        selectEl.selectedIndex = i;
+        selectEl.dispatchEvent(new Event('change'));
+        syncLabel();
+        closeDrop();
+      });
+      list.appendChild(li);
+    });
+  }
+
+  function openDrop() {
+    buildOptions();
+    isOpen = true;
+    trigger.classList.add('open');
+    list.classList.add('open');
+  }
+
+  function closeDrop() {
+    isOpen = false;
+    trigger.classList.remove('open');
+    list.classList.remove('open');
+  }
+
+  trigger.addEventListener('click', function () { isOpen ? closeDrop() : openDrop(); });
+
+  trigger.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      isOpen ? closeDrop() : openDrop();
+    } else if (e.key === 'Escape') {
+      closeDrop();
+    } else if (!isOpen && e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (selectEl.selectedIndex < selectEl.options.length - 1) {
+        selectEl.selectedIndex++;
+        selectEl.dispatchEvent(new Event('change'));
+        syncLabel();
+      }
+    } else if (!isOpen && e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (selectEl.selectedIndex > 0) {
+        selectEl.selectedIndex--;
+        selectEl.dispatchEvent(new Event('change'));
+        syncLabel();
+      }
+    }
+  });
+
+  /* Sync label when select value changes externally */
+  selectEl.addEventListener('change', syncLabel);
+
+  document.addEventListener('click', function (e) {
+    if (isOpen && !wrap.contains(e.target)) closeDrop();
+  });
+
+  syncLabel();
 }

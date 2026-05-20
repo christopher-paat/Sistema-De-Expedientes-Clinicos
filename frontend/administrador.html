@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Administrador — Expedientes Clínicos</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
 </head>
 <body>
 
@@ -96,16 +98,19 @@
         <div class="card-body" style="padding-bottom:0;">
           <div class="filters">
             <div class="form-group">
-              <label for="aIdUsuario">ID usuario</label>
-              <input type="number" id="aIdUsuario" placeholder="Todos" min="1" style="width:110px;" />
+              <label for="aBuscarUsuario">Usuario</label>
+              <div class="autocomplete-wrap">
+                <input type="text" id="aBuscarUsuario" placeholder="Nombre del profesional..." autocomplete="off" style="min-width:220px;" />
+                <div class="autocomplete-list" id="aBuscarUsuarioList"></div>
+              </div>
             </div>
             <div class="form-group">
               <label for="aFechaDesde">Desde</label>
-              <input type="datetime-local" id="aFechaDesde" />
+              <input type="text" id="aFechaDesde" placeholder="Desde..." readonly />
             </div>
             <div class="form-group">
               <label for="aFechaHasta">Hasta</label>
-              <input type="datetime-local" id="aFechaHasta" />
+              <input type="text" id="aFechaHasta" placeholder="Hasta..." readonly />
             </div>
             <div class="form-group">
               <label for="aAccion">Acción</label>
@@ -122,10 +127,6 @@
                 <option>APROBAR_REPORTE</option>
                 <option>RECHAZAR_REPORTE</option>
               </select>
-            </div>
-            <div class="form-group">
-              <label for="aRecurso">Recurso</label>
-              <input type="text" id="aRecurso" placeholder="Ej. Expediente" style="width:140px;" />
             </div>
             <div class="form-group">
               <label for="aResultado">Resultado</label>
@@ -282,11 +283,18 @@ document.getElementById('btnGuardarEdicion').addEventListener('click', async fun
 /* Limpiar filtros de auditoría */
 (function () {
   document.getElementById('btnLimpiarAuditoria').addEventListener('click', function () {
-    ['aIdUsuario', 'aFechaDesde', 'aFechaHasta', 'aRecurso'].forEach(function (id) {
-      document.getElementById(id).value = '';
+    ['aBuscarUsuario', 'aFechaDesde', 'aFechaHasta'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.value = '';
     });
-    document.getElementById('aAccion').value   = '';
-    document.getElementById('aResultado').value = '';
+    if (typeof usuarioAuditoriaId !== 'undefined') usuarioAuditoriaId = null;
+    if (typeof logsMaster !== 'undefined') logsMaster = [];
+    if (window._fpDesde) window._fpDesde.clear();
+    if (window._fpHasta) window._fpHasta.clear();
+    ['aAccion', 'aResultado'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) { el.value = ''; el.dispatchEvent(new Event('change')); }
+    });
     var countEl = document.getElementById('countAuditoria');
     if (countEl) countEl.textContent = '';
     document.getElementById('auditoriaResultado').innerHTML =
@@ -295,6 +303,28 @@ document.getElementById('btnGuardarEdicion').addEventListener('click', async fun
       '<line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/>' +
       '</svg></div><p>Aplica filtros y presiona <strong>Buscar</strong> para ver los registros</p></div>';
   });
+})();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+<script>
+(function () {
+  flatpickr.localize(flatpickr.l10ns.es);
+  var fpCfg = {
+    locale: 'es',
+    enableTime: true,
+    dateFormat: 'Y-m-dTH:i',
+    altInput: true,
+    altFormat: 'd/m/Y H:i',
+    time_24hr: true,
+    allowInput: false,
+    animate: true,
+    static: false,
+    disableMobile: true,
+  };
+  window._fpDesde = flatpickr('#aFechaDesde', fpCfg);
+  window._fpHasta = flatpickr('#aFechaHasta', fpCfg);
 })();
 </script>
 </body>
