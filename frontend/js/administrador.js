@@ -264,10 +264,6 @@ function renderDocCardAdmin(nombre, desc, doc, estado, tipo) {
               <div class="label">FECHA DE REGISTRO</div>
               <div class="value">${fDate(doc.fecha)}</div>
             </div>
-            <div class="info-item">
-              <div class="label">ID DOCUMENTO</div>
-              <div class="value">#${esc(doc.idDocumento)}</div>
-            </div>
           </div>
           <div class="doc-card-actions">
             <button class="btn btn-secondary btn-sm" onclick="verDocumento('${tipo}')">
@@ -305,7 +301,7 @@ function renderFormEntrevista(idExpediente) {
     </div>
     <div class="form-group" style="margin-bottom:0.5rem;">
       <label style="font-size:0.75rem;">Vivienda</label>
-      <textarea id="eVivienda_${idExpediente}" rows="2" maxlength="1000" placeholder="Tipo, condiciones, número de personas..."></textarea>
+      <textarea id="eVivienda_${idExpediente}" rows="2" maxlength="2000" placeholder="Tipo, condiciones, número de personas..."></textarea>
     </div>
     <div class="form-group" style="margin-bottom:0.75rem;">
       <label style="font-size:0.75rem;">Estado de salud familiar <span class="req">*</span></label>
@@ -322,11 +318,11 @@ function renderFormConsentimiento(idExpediente) {
     <div style="font-size:0.8125rem;font-weight:600;color:#92400E;margin-bottom:0.75rem;">Registrar Consentimiento Informado</div>
     <div class="form-group" style="margin-bottom:0.5rem;">
       <label style="font-size:0.75rem;">Cuerpo del texto <span class="req">*</span></label>
-      <textarea id="cCuerpo_${idExpediente}" rows="3" placeholder="Texto del acuerdo de tratamiento..."></textarea>
+      <textarea id="cCuerpo_${idExpediente}" rows="3" maxlength="2000" placeholder="Texto del acuerdo de tratamiento..."></textarea>
     </div>
     <div class="form-group" style="margin-bottom:0.75rem;">
       <label style="font-size:0.75rem;">Acuerdo de confidencialidad <span class="req">*</span></label>
-      <textarea id="cAcuerdo_${idExpediente}" rows="3" placeholder="Cláusulas de confidencialidad..."></textarea>
+      <textarea id="cAcuerdo_${idExpediente}" rows="3" maxlength="2000" placeholder="Cláusulas de confidencialidad..."></textarea>
     </div>
     <div id="resConsentimiento_${idExpediente}" style="margin-bottom:0.5rem;"></div>
     <button class="btn btn-primary btn-sm" onclick="guardarConsentimiento(${idExpediente}, this)">Guardar consentimiento</button>
@@ -627,7 +623,6 @@ function verDocumento(tipo) {
     contenido = `
       <div class="info-grid">
         <div class="info-item"><div class="label">FECHA</div><div class="value">${fDate(doc.fecha)}</div></div>
-        <div class="info-item"><div class="label">ID DOCUMENTO</div><div class="value">#${esc(doc.idDocumento)}</div></div>
       </div>
       <div class="info-grid" style="margin-top:1.25rem;">
         <div class="info-item"><div class="label">INGRESO FAMILIAR</div><div class="value">$${esc(doc.ingresoFamiliar)}</div></div>
@@ -644,7 +639,6 @@ function verDocumento(tipo) {
     contenido = `
       <div class="info-grid">
         <div class="info-item"><div class="label">FECHA</div><div class="value">${fDate(doc.fecha)}</div></div>
-        <div class="info-item"><div class="label">ID DOCUMENTO</div><div class="value">#${esc(doc.idDocumento)}</div></div>
       </div>
       <div class="report-section" style="margin-top:1.25rem;"><div class="section-title">CUERPO DEL TEXTO</div><div class="report-text-block">${esc(doc.cuerpoDelTexto)}</div></div>
       <div class="report-section" style="margin-top:1rem;"><div class="section-title">ACUERDO DE CONFIDENCIALIDAD</div><div class="report-text-block">${esc(doc.acuerdoConfidencial)}</div></div>
