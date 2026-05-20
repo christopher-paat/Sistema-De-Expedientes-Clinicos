@@ -612,7 +612,7 @@ function openModalCrear(idExpediente) {
   idExpedienteReporte = idExpediente;
   document.getElementById('modalReporteTitulo').textContent = 'Nueva Sesión';
   document.getElementById('formReporte').reset();
-  document.getElementById('rfFechaSesion').valueAsDate = new Date();
+  document.getElementById('rfFechaSesion')._flatpickr.setDate(new Date());
   openModal('modalReporte');
 }
 
