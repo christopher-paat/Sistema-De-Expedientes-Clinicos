@@ -2,19 +2,11 @@ const BASE_URL = 'https://sistema-de-expedientes-clinicos-tkck.onrender.com/api/
 
 /* ===== USER ID ===== */
 function getUserId() {
-  return document.getElementById('userId')?.value?.trim() || '';
+  return localStorage.getItem('clinica_user_id') || '';
 }
 
-function saveUserId() {
-  const v = getUserId();
-  if (v) localStorage.setItem('clinica_user_id', v);
-}
-
-function restoreUserId() {
-  const saved = localStorage.getItem('clinica_user_id');
-  const el = document.getElementById('userId');
-  if (saved && el) el.value = saved;
-}
+function saveUserId() {}
+function restoreUserId() {}
 
 /* ===== API CALLS ===== */
 async function apiCall(method, path, body = null) {
@@ -133,10 +125,7 @@ function initTabs(containerSelector) {
   });
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  restoreUserId();
-  document.getElementById('userId')?.addEventListener('change', saveUserId);
-});
+window.addEventListener('DOMContentLoaded', () => {});
 
 /* ===== AUTOCOMPLETE ===== */
 /*
