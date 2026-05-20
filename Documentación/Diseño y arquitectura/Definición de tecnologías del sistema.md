@@ -22,13 +22,13 @@ El sistema cuenta con una definición clara de clases, reglas de negocio y model
 
 ## Base de datos
 
-- **Tecnología:** MySQL
+- **Tecnología:** PostgreSQL 16
 
 - **Descripción:**
 Se utilizará para almacenar la información de pacientes, expedientes clínicos, usuarios y registros del sistema.
 
 - **Justificación:**
-El sistema maneja datos estructurados con relaciones claras, como se observa en el diccionario de datos y la estructura del expediente clínico. MySQL es una base de datos relacional adecuada para este tipo de información.
+El sistema maneja datos estructurados con relaciones claras, como se observa en el diccionario de datos y la estructura del expediente clínico. PostgreSQL 16 es una base de datos relacional robusta, de código abierto y adecuada para este tipo de información, con soporte nativo para tipos de datos avanzados, restricciones de integridad referencial y compatibilidad con Spring Boot a través de Spring Data JPA.
 
 ## Herramientas de apoyo
 

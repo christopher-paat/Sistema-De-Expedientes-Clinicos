@@ -11,99 +11,40 @@
 <div class="topbar">
   <div class="container">
     <div class="topbar-brand">
+      <div class="topbar-logo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
       <h1>Expedientes Clínicos</h1>
       <span class="role-tag">SUPERVISOR</span>
     </div>
-    <a href="index.html">← Inicio</a>
-  </div>
-</div>
-
-<div class="user-bar">
-  <div class="container">
-    <label for="userId">ID de supervisor:</label>
-    <input type="number" id="userId" placeholder="Ej. 5" min="1" autocomplete="off" />
-    <span style="font-size:0.75rem;color:#94A3B8;">Requerido para cargar reportes · Se guarda automáticamente</span>
+    <div class="topbar-user">
+      <button class="topbar-logout" onclick="auth.logout()">Cerrar sesión</button>
+    </div>
   </div>
 </div>
 
 <div class="page">
   <div class="container">
-    <div class="layout-split">
 
-      <!-- Panel izquierdo: lista de reportes pendientes -->
-      <div class="card" style="position:sticky;top:70px;">
-        <div class="card-header">
-          <h2>Reportes Pendientes</h2>
-        </div>
-        <div class="stats-grid" id="statsGrid" style="display:none;">
-          <div class="stat-item">
-            <div class="stat-value" id="statTotal">—</div>
-            <div class="stat-label">Total</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-value" id="statVisibles">—</div>
-            <div class="stat-label">Visibles</div>
-          </div>
-        </div>
-        <div class="card-body" style="padding-bottom:0;">
-          <div class="form-group autocomplete-wrap">
-            <label for="filtroTerapeutaNombre">Terapeuta</label>
-            <input type="text" id="filtroTerapeutaNombre"
-              placeholder="Nombre del terapeuta..."
-              autocomplete="off" />
-            <div class="autocomplete-list" id="acTerapeutas"></div>
-            <div class="form-hint">Carga los reportes primero, luego filtra por nombre.</div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="filtroDesde">Desde</label>
-              <input type="date" id="filtroDesde" />
-            </div>
-            <div class="form-group">
-              <label for="filtroHasta">Hasta</label>
-              <input type="date" id="filtroHasta" />
-            </div>
-          </div>
-          <div style="padding-bottom:1rem;display:flex;gap:0.5rem;">
-            <button class="btn btn-primary" style="flex:1;" id="btnLoadReportes">Buscar reportes</button>
-            <button type="button" class="btn btn-secondary" id="btnLimpiarFiltros" title="Limpiar todos los filtros">Limpiar</button>
-          </div>
-        </div>
-        <div id="reportesList">
-          <div class="empty-state" style="padding:2rem 1.5rem;">
+    <div id="contentPanel">
+      <div class="card">
+        <div class="card-body">
+          <div class="empty-state" style="padding:3rem 2rem;">
             <div class="empty-icon">
-              <svg width="38" height="38" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
+              <svg width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                <rect x="9" y="3" width="6" height="4" rx="1"/>
+                <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
               </svg>
             </div>
-            <p style="margin-bottom:0.5rem;">Para ver reportes pendientes:</p>
-            <ol class="step-list">
-              <li>Ingresa tu ID de supervisor</li>
-              <li>Aplica filtros opcionales de fecha</li>
-              <li>Haz clic en <strong>Buscar reportes</strong></li>
-            </ol>
-          </div>
-        </div>
-        <div class="status-banner" id="statusLeft"></div>
-      </div>
-
-      <!-- Panel derecho: detalle del reporte -->
-      <div id="contentPanel">
-        <div class="card">
-          <div class="card-body">
-            <div class="empty-state" style="padding:3rem 2rem;">
-              <div class="empty-icon">
-                <svg width="38" height="38" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M15 18l-6-6 6-6"/>
-                </svg>
-              </div>
-              <p>Selecciona un reporte de la lista para revisarlo</p>
-            </div>
+            <p>Cargando reportes pendientes...</p>
           </div>
         </div>
       </div>
-
     </div>
+
   </div>
 </div>
 
@@ -154,17 +95,12 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+auth.guard();
+</script>
 <script src="js/supervisor.js"></script>
 <script>
-/* Limpiar filtros de búsqueda */
-(function () {
-  document.getElementById('btnLimpiarFiltros').addEventListener('click', function () {
-    document.getElementById('filtroTerapeutaNombre').value = '';
-    document.getElementById('filtroDesde').value           = '';
-    document.getElementById('filtroHasta').value           = '';
-  });
-})();
-
 /* Confirmación antes de aprobar (intercepta en fase de captura) */
 (function () {
   var idAprobarPendiente = null;
@@ -203,7 +139,6 @@
     counter.style.color = n === 0 ? '#DC2626' : n < 15 ? '#D97706' : '#94A3B8';
   }
   ta.addEventListener('input', update);
-  /* Reiniciar al abrir el modal */
   document.getElementById('modalRechazar').addEventListener('transitionend', update);
   update();
 })();

@@ -11,18 +11,17 @@
 <div class="topbar">
   <div class="container">
     <div class="topbar-brand">
+      <div class="topbar-logo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
       <h1>Expedientes Clínicos</h1>
       <span class="role-tag">ADMINISTRADOR</span>
     </div>
-    <a href="index.html">← Inicio</a>
-  </div>
-</div>
-
-<div class="user-bar">
-  <div class="container">
-    <label for="userId">ID de administrador:</label>
-    <input type="number" id="userId" placeholder="Ej. 1" min="1" autocomplete="off" autofocus />
-    <span style="font-size:0.75rem;color:#94A3B8;">Requerido para todas las operaciones · Se guarda automáticamente</span>
+    <div class="topbar-user">
+      <button class="topbar-logout" onclick="auth.logout()">Cerrar sesión</button>
+    </div>
   </div>
 </div>
 
@@ -30,129 +29,54 @@
   <div class="container">
 
     <div class="tabs" id="adminTabs">
-      <button class="tab active" data-tab="tabNuevo">Nuevo Expediente</button>
-      <button class="tab" data-tab="tabGestion">Gestión</button>
-      <button class="tab" data-tab="tabAuditoria">Auditoría</button>
+      <button class="tab active" data-tab="tabPacientes">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+        Pacientes
+      </button>
+      <button class="tab" data-tab="tabUsuarios">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Usuarios
+      </button>
+      <button class="tab" data-tab="tabAuditoria">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+        Auditoría
+      </button>
     </div>
 
-    <!-- TAB 1: Nuevo Expediente -->
-    <div class="tab-content active" id="tabNuevo">
-      <div class="card" style="max-width:600px;">
-        <div class="card-header">
-          <h2>Registrar Expediente Clínico</h2>
-        </div>
-        <div class="card-body">
-          <p class="lead-text">Vincula un paciente con un terapeuta para iniciar el seguimiento clínico. El expediente quedará en estado <strong>ACTIVO</strong> de forma inmediata.</p>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="nePaciente">ID del Paciente <span class="req">*</span></label>
-              <input type="number" id="nePaciente" placeholder="Ej. 12" min="1" required autocomplete="off" />
-            </div>
-            <div class="form-group">
-              <label for="neTerapeuta">ID del Terapeuta <span class="req">*</span></label>
-              <input type="number" id="neTerapeuta" placeholder="Ej. 7" min="1" required autocomplete="off" />
-            </div>
+    <!-- TAB 1: Pacientes -->
+    <div class="tab-content active" id="tabPacientes">
+      <div id="panelPacientes">
+        <div class="card"><div class="card-body">
+          <div class="empty-state" style="padding:3rem 2rem;">
+            <span class="spinner"></span>
+            <p style="margin-top:1rem;">Cargando pacientes...</p>
           </div>
-          <div class="form-group">
-            <label for="neFecha">Próxima cita</label>
-            <input type="datetime-local" id="neFecha" />
-            <div class="form-hint">Opcional — puedes asignarla después.</div>
-          </div>
-          <div style="margin-top:0.75rem;">
-            <button class="btn btn-primary" id="btnCrearExpediente">Crear Expediente</button>
-          </div>
-          <div id="resultNuevo" style="margin-top:1rem;"></div>
-        </div>
+        </div></div>
       </div>
     </div>
 
-    <!-- TAB 2: Gestión -->
-    <div class="tab-content" id="tabGestion">
-      <div class="card" style="max-width:680px;">
-
-        <div class="card-body">
-          <div class="id-pin-bar">
-            <label for="gExpedienteId">ID del Expediente <span class="req">*</span></label>
-            <input type="number" id="gExpedienteId" placeholder="Ej. 45" min="1" autocomplete="off" />
-            <span class="id-pin-note">Ingresa el ID antes de usar cualquier sección abajo</span>
+    <!-- TAB 2: Usuarios -->
+    <div class="tab-content" id="tabUsuarios">
+      <div id="panelUsuarios">
+        <div class="card"><div class="card-body">
+          <div class="empty-state" style="padding:3rem 2rem;">
+            <div class="empty-icon">
+              <svg width="38" height="38" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            <p>Selecciona la pestaña para cargar los usuarios</p>
           </div>
-        </div>
-        <div class="status-banner" id="statusGestion"></div>
-
-        <!-- Cambiar estado -->
-        <div class="card-section">
-          <div class="section-title"><span class="section-step">1</span>Cambiar Estado del Expediente</div>
-          <div style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap;">
-            <div class="form-group" style="margin:0;">
-              <label for="gNuevoEstado" style="font-size:0.75rem;color:#64748B;margin-bottom:0.25rem;display:block;">Nuevo estado</label>
-              <select id="gNuevoEstado">
-                <option value="ACTIVO">ACTIVO</option>
-                <option value="ARCHIVADO">ARCHIVADO</option>
-              </select>
-            </div>
-            <button class="btn btn-secondary" id="btnCambiarEstado">Aplicar cambio</button>
-          </div>
-          <div id="confirmEstado" class="inline-confirm" role="alert">
-            <p class="confirm-msg"></p>
-            <div class="inline-confirm-btns">
-              <button type="button" class="btn btn-secondary btn-sm" id="btnCancelarEstado">Cancelar</button>
-              <button type="button" class="btn btn-warning btn-sm" id="btnConfirmarEstado">Confirmar</button>
-            </div>
-          </div>
-          <div id="resultEstado" style="margin-top:0.75rem;"></div>
-        </div>
-
-        <!-- Entrevista socioeconómica -->
-        <div class="card-section">
-          <div class="section-title"><span class="section-step">2</span>Registrar Entrevista Socioeconómica</div>
-          <form id="formEntrevista">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="eIngreso">Ingreso familiar <span class="req">*</span></label>
-                <input type="number" id="eIngreso" min="0" step="0.01" placeholder="Ej. 8500.00" required autocomplete="off" />
-              </div>
-              <div class="form-group">
-                <label for="eGasto">Gasto alimentación <span class="req">*</span></label>
-                <input type="number" id="eGasto" min="0" step="0.01" placeholder="Ej. 2000.00" required autocomplete="off" />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="eLugar">Lugar de procedencia <span class="req">*</span></label>
-              <input type="text" id="eLugar" maxlength="100" placeholder="Ciudad, Estado" required />
-            </div>
-            <div class="form-group">
-              <label for="eVivienda">Descripción de vivienda</label>
-              <textarea id="eVivienda" rows="2" maxlength="1000" placeholder="Tipo, condiciones, número de personas..."></textarea>
-              <div class="form-hint">Opcional · Máx. 1,000 caracteres.</div>
-            </div>
-            <div class="form-group">
-              <label for="eSalud">Estado de salud familiar <span class="req">*</span></label>
-              <input type="text" id="eSalud" maxlength="50" placeholder="Ej. Sin enfermedades crónicas" required />
-            </div>
-            <button type="button" class="btn btn-primary btn-sm" id="btnRegistrarEntrevista">Guardar entrevista</button>
-            <div id="resultEntrevista" style="margin-top:0.75rem;"></div>
-          </form>
-        </div>
-
-        <!-- Consentimiento informado -->
-        <div class="card-section">
-          <div class="section-title"><span class="section-step">3</span>Registrar Consentimiento Informado</div>
-          <form id="formConsentimiento">
-            <div class="form-group">
-              <label for="cCuerpo">Cuerpo del texto <span class="req">*</span></label>
-              <textarea id="cCuerpo" rows="4" placeholder="Texto del acuerdo de tratamiento..." required></textarea>
-              <div class="form-hint">Describe los términos del tratamiento y los derechos del paciente.</div>
-            </div>
-            <div class="form-group">
-              <label for="cAcuerdo">Acuerdo de confidencialidad <span class="req">*</span></label>
-              <textarea id="cAcuerdo" rows="3" placeholder="Cláusulas de confidencialidad..." required></textarea>
-              <div class="form-hint">Incluye todas las cláusulas de privacidad aplicables.</div>
-            </div>
-            <button type="button" class="btn btn-primary btn-sm" id="btnRegistrarConsentimiento">Guardar consentimiento</button>
-            <div id="resultConsentimiento" style="margin-top:0.75rem;"></div>
-          </form>
-        </div>
-
+        </div></div>
       </div>
     </div>
 
@@ -232,48 +156,20 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+auth.guard();
+</script>
 <script src="js/administrador.js"></script>
 <script>
-/* Confirmación de cambio de estado (intercepta en fase de captura, antes del handler de administrador.js) */
-(function () {
-  var confirmBox = document.getElementById('confirmEstado');
-  var confirmMsg = confirmBox.querySelector('.confirm-msg');
-  var btnSi      = document.getElementById('btnConfirmarEstado');
-  var btnNo      = document.getElementById('btnCancelarEstado');
-  var esperando  = false;
-
-  document.addEventListener('click', function (e) {
-    if (!e.target.closest('#btnCambiarEstado')) return;
-    if (esperando) { esperando = false; return; }
-
-    var id     = (document.getElementById('gExpedienteId').value || '').trim();
-    var estado = document.getElementById('gNuevoEstado').value;
-    if (!id) return; /* sin ID → dejar que administrador.js muestre su toast de error */
-
-    e.stopImmediatePropagation();
-    confirmMsg.textContent = 'Cambiar expediente #' + id + ' al estado ' + estado + '. ¿Confirmar?';
-    confirmBox.classList.add('show');
-  }, true);
-
-  btnSi.addEventListener('click', function () {
-    confirmBox.classList.remove('show');
-    esperando = true;
-    document.getElementById('btnCambiarEstado').click();
-  });
-
-  btnNo.addEventListener('click', function () {
-    confirmBox.classList.remove('show');
-  });
-})();
-
 /* Limpiar filtros de auditoría */
 (function () {
   document.getElementById('btnLimpiarAuditoria').addEventListener('click', function () {
     ['aIdUsuario', 'aFechaDesde', 'aFechaHasta', 'aRecurso'].forEach(function (id) {
       document.getElementById(id).value = '';
     });
-    document.getElementById('aAccion').value    = '';
-    document.getElementById('aResultado').value  = '';
+    document.getElementById('aAccion').value   = '';
+    document.getElementById('aResultado').value = '';
     var countEl = document.getElementById('countAuditoria');
     if (countEl) countEl.textContent = '';
     document.getElementById('auditoriaResultado').innerHTML =

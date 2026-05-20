@@ -3,48 +3,77 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sistema de Expedientes Clinicos</title>
+  <title>Ingresar — Expedientes Clínicos</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body>
+<body class="login-body">
 
-<div class="topbar">
-  <div class="container">
-    <div class="topbar-brand">
-      <h1>Sistema de Expedientes Clinicos</h1>
+<div class="login-page">
+
+  <div class="login-card">
+
+    <div class="login-brand">
+      <div class="login-logo">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <div>
+        <div class="login-clinic-name">Clínica Psicológica</div>
+        <div class="login-system-name">Sistema de Expedientes Clínicos</div>
+      </div>
     </div>
+
+    <div class="login-divider"></div>
+
+    <div class="login-body-inner">
+      <h2 class="login-title">Ingresar al sistema</h2>
+      <p class="login-subtitle">Ingresa tu ID de usuario para acceder a tu módulo de trabajo.</p>
+
+      <form id="loginForm" novalidate>
+        <div class="form-group" style="margin-bottom:1.25rem;">
+          <label for="loginId">ID de usuario</label>
+          <input
+            type="number"
+            id="loginId"
+            placeholder="Ej. 3"
+            min="1"
+            autocomplete="off"
+            autofocus
+            required
+          />
+          <div class="form-hint">El sistema identificará tu módulo automáticamente.</div>
+        </div>
+
+        <div id="loginError" class="alert alert-error hidden" role="alert"></div>
+
+        <button type="submit" class="btn btn-primary login-btn" id="btnLogin">
+          Ingresar al sistema
+        </button>
+      </form>
+    </div>
+
+    <div class="login-footer">
+      <div class="login-role-icons">
+        <div class="login-role-chip">
+          <span class="login-role-dot login-role-dot-blue"></span>Terapeuta
+        </div>
+        <div class="login-role-chip">
+          <span class="login-role-dot login-role-dot-teal"></span>Supervisor
+        </div>
+        <div class="login-role-chip">
+          <span class="login-role-dot login-role-dot-violet"></span>Administrador
+        </div>
+      </div>
+    </div>
+
   </div>
+
 </div>
 
-<div class="page">
-  <div class="container">
-    <div class="home-hero">
-      <div class="clinic-logo">+</div>
-      <h1>Clinica Psicologica</h1>
-      <p>Selecciona tu modulo de trabajo para continuar. Tendras que ingresar tu ID de usuario en cada seccion.</p>
-    </div>
+<div class="toast-container" id="toastContainer"></div>
 
-    <div class="role-cards">
-      <a href="terapeuta.html" class="role-card">
-        <div class="role-icon role-icon-blue">T</div>
-        <h2>Terapeuta</h2>
-        <p>Visualiza tus pacientes asignados, accede a expedientes clinicos, registra y gestiona reportes de sesion.</p>
-      </a>
-
-      <a href="supervisor.html" class="role-card">
-        <div class="role-icon role-icon-teal">S</div>
-        <h2>Supervisor</h2>
-        <p>Revisa los reportes pendientes de tus terapeutas supervisados, aprueba o rechaza con retroalimentacion.</p>
-      </a>
-
-      <a href="administrador.html" class="role-card">
-        <div class="role-icon role-icon-violet">A</div>
-        <h2>Administrador</h2>
-        <p>Registra expedientes clinicos, gestiona documentos, cambia estados y consulta el historial de auditoria.</p>
-      </a>
-    </div>
-  </div>
-</div>
-
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
 </body>
 </html>
