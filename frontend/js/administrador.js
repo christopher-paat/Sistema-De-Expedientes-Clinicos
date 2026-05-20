@@ -139,55 +139,38 @@ function filtrarPacienteInline(query) {
   if (el) el.innerHTML = renderPacientesItems(filtrados);
 }
 
-async function selectPaciente(idExpediente, itemEl) {
+function selectPaciente(idExpediente, itemEl) {
   if (itemEl) {
     document.querySelectorAll('#panelPacientes .patient-item').forEach(i => i.classList.remove('active'));
     itemEl.classList.add('active');
   }
-  showPanelLoading('panelPacientes', 'Cargando expediente...');
-  try {
-    const data = await api.get(`/expedientes/${idExpediente}`);
-    expedienteActual = data;
-    renderDetallePaciente(data);
-  } catch (e) {
-    toast(e.message, 'error');
-    showPanelError('panelPacientes', e.message);
-  }
+  const r = todosLosExpedientes.find(e => e.idExpediente === idExpediente);
+  if (!r) return;
+  expedienteActual = r;
+  renderDetallePaciente(r);
 }
 
-function renderDetallePaciente(data) {
+function renderDetallePaciente(r) {
   const panel = document.getElementById('panelPacientes');
-  const p = data.paciente || {};
-  const nombre = p.nombreCompleto || ('Paciente #' + data.idPaciente);
-
-  const faltaEntrevista     = !data.entrevistaSocioeconomica;
-  const faltaConsentimiento = !data.informeConsentimiento;
-  const todoOk = !faltaEntrevista && !faltaConsentimiento;
+  const todoOk = !r.faltaEntrevista && !r.faltaConsentimiento;
 
   panel.innerHTML = `
     <div class="card">
       <div class="card-header">
         <div>
-          <h2 style="font-size:1rem;font-weight:700;">${esc(nombre)}</h2>
-          <p style="font-size:0.8125rem;color:#64748B;margin-top:0.125rem;">Expediente #${esc(data.idExpediente)}</p>
+          <h2 style="font-size:1rem;font-weight:700;">${esc(r.nombrePaciente)}</h2>
+          <p style="font-size:0.8125rem;color:#64748B;margin-top:0.125rem;">Expediente #${esc(r.idExpediente)}</p>
         </div>
-        <div style="display:flex;gap:0.5rem;align-items:center;">
-          ${badge(data.estado)}
-          <button class="btn btn-secondary btn-sm" onclick="loadPacientes()">
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-            Pacientes
-          </button>
-        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadPacientes()">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Pacientes
+        </button>
       </div>
       <div class="card-body">
 
         <div class="info-grid" style="margin-bottom:1.25rem;">
-          <div class="info-item"><div class="label">PACIENTE</div><div class="value">${esc(nombre)}</div></div>
-          ${p.edad != null ? `<div class="info-item"><div class="label">EDAD</div><div class="value">${esc(p.edad)} años</div></div>` : ''}
-          ${p.correoElectronico ? `<div class="info-item"><div class="label">CORREO</div><div class="value">${esc(p.correoElectronico)}</div></div>` : ''}
-          ${p.numeroTelefonico ? `<div class="info-item"><div class="label">TELÉFONO</div><div class="value">${esc(p.numeroTelefonico)}</div></div>` : ''}
-          <div class="info-item"><div class="label">EXPEDIENTE</div><div class="value">#${esc(data.idExpediente)}</div></div>
-          ${data.fechaProxCita ? `<div class="info-item"><div class="label">PRÓXIMA CITA</div><div class="value">${fDateTime(data.fechaProxCita)}</div></div>` : ''}
+          <div class="info-item"><div class="label">PACIENTE</div><div class="value">${esc(r.nombrePaciente)}</div></div>
+          <div class="info-item"><div class="label">EXPEDIENTE</div><div class="value">#${esc(r.idExpediente)}</div></div>
         </div>
 
         ${todoOk ? `
@@ -196,24 +179,20 @@ function renderDetallePaciente(data) {
         </div>` : `
         <div class="report-section">
           <div class="section-title" style="color:#D97706;">Documentos Pendientes</div>
-          ${faltaEntrevista ? renderFormEntrevista(data.idExpediente) : ''}
-          ${faltaConsentimiento ? renderFormConsentimiento(data.idExpediente) : ''}
+          ${r.faltaEntrevista ? renderFormEntrevista(r.idExpediente) : ''}
+          ${r.faltaConsentimiento ? renderFormConsentimiento(r.idExpediente) : ''}
         </div>`}
 
-        ${!faltaEntrevista ? `
+        ${!r.faltaEntrevista ? `
         <div class="report-section" style="margin-top:0.75rem;">
           <div class="section-title">Entrevista Socioeconómica</div>
-          <div class="report-text-block" style="color:#166534;background:#F0FDF4;border-color:#86EFAC;">
-            Registrada el ${fDate(data.entrevistaSocioeconomica.fecha)} · Doc. #${esc(data.entrevistaSocioeconomica.idDocumento)}
-          </div>
+          <div class="report-text-block" style="color:#166534;background:#F0FDF4;border-color:#86EFAC;">Registrada</div>
         </div>` : ''}
 
-        ${!faltaConsentimiento ? `
+        ${!r.faltaConsentimiento ? `
         <div class="report-section" style="margin-top:0.75rem;">
           <div class="section-title">Consentimiento Informado</div>
-          <div class="report-text-block" style="color:#166534;background:#F0FDF4;border-color:#86EFAC;">
-            Registrado el ${fDate(data.informeConsentimiento.fecha)} · Doc. #${esc(data.informeConsentimiento.idDocumento)}
-          </div>
+          <div class="report-text-block" style="color:#166534;background:#F0FDF4;border-color:#86EFAC;">Registrado</div>
         </div>` : ''}
 
       </div>
@@ -294,9 +273,8 @@ async function guardarEntrevista(idExpediente, btn) {
       estadoSaludFamiliar: salud,
     });
     toast('Entrevista socioeconómica registrada', 'success');
-    const data = await api.get(`/expedientes/${idExpediente}`);
-    expedienteActual = data;
-    renderDetallePaciente(data);
+    expedienteActual.faltaEntrevista = false;
+    renderDetallePaciente(expedienteActual);
   } catch (e) {
     toast(e.message, 'error');
     if (resEl) resEl.innerHTML = `<div class="alert alert-error">${esc(e.message)}</div>`;
@@ -323,9 +301,8 @@ async function guardarConsentimiento(idExpediente, btn) {
       acuerdoConfidencial: acuerdo,
     });
     toast('Consentimiento informado registrado', 'success');
-    const data = await api.get(`/expedientes/${idExpediente}`);
-    expedienteActual = data;
-    renderDetallePaciente(data);
+    expedienteActual.faltaConsentimiento = false;
+    renderDetallePaciente(expedienteActual);
   } catch (e) {
     toast(e.message, 'error');
     if (resEl) resEl.innerHTML = `<div class="alert alert-error">${esc(e.message)}</div>`;
