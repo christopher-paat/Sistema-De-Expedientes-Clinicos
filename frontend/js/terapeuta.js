@@ -101,7 +101,7 @@ function renderPacientesItems(lista) {
       <div class="patient-avatar">${esc(p.nombreCompleto.charAt(0))}</div>
       <div class="patient-info" style="flex:1;">
         <div class="patient-name">${esc(p.nombreCompleto)}</div>
-        <div class="patient-meta">Expediente #${esc(p.idExpediente)}</div>
+        <div class="patient-meta">${folioExp(p.idExpediente)}</div>
       </div>
       <svg width="16" height="16" fill="none" stroke="#CBD5E1" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;">
         <polyline points="9 18 15 12 9 6"/>
@@ -152,7 +152,7 @@ function renderExpediente(exp, tab) {
           <div>
             <h2 class="exp-patient-name">${esc(p.nombreCompleto)}</h2>
             <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.375rem;flex-wrap:wrap;">
-              <span class="exp-id-badge">EXP-${esc(exp.idExpediente)}</span>
+              <span class="exp-id-badge">${folioExp(exp.idExpediente)}</span>
               ${badge(exp.estado)}
             </div>
           </div>
@@ -463,6 +463,9 @@ function renderTabSesiones(exp) {
                           <button class="btn-icon-action" title="Editar" onclick="loadAndEdit(${r.idDocumento})">
                             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                           </button>
+                          <button class="btn-icon-action btn-icon-enviar" title="Enviar a revisión" onclick="enviarSesionDirecta(${r.idDocumento})">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                          </button>
                         ` : ''}
                       </div>
                     </td>
@@ -513,7 +516,7 @@ function renderReporte(r) {
       <div class="card-header">
         <div>
           <h2 style="font-size:1rem;font-weight:700;">Detalle de Sesión</h2>
-          <p style="font-size:0.8125rem;color:#64748B;margin-top:0.125rem;">Reporte #${esc(r.idDocumento)}</p>
+          <p style="font-size:0.8125rem;color:#64748B;margin-top:0.125rem;">${folioRep(r.idDocumento)}</p>
         </div>
         <div style="display:flex;gap:0.5rem;align-items:center;">
           ${sesionBadge(r.estado)}
@@ -522,7 +525,7 @@ function renderReporte(r) {
       </div>
       <div class="card-body">
         <div class="info-grid" style="margin-bottom:1.25rem;">
-          <div class="info-item"><div class="label">EXPEDIENTE</div><div class="value">#${esc(r.idExpediente)}</div></div>
+          <div class="info-item"><div class="label">EXPEDIENTE</div><div class="value">${folioExp(r.idExpediente)}</div></div>
           <div class="info-item"><div class="label">FECHA DE SESIÓN</div><div class="value">${fDate(r.fechaSesion)}</div></div>
           <div class="info-item"><div class="label">DURACIÓN</div><div class="value">${r.duracionSesion ? esc(r.duracionSesion) + ' min' : '—'}</div></div>
           <div class="info-item"><div class="label">CREADO</div><div class="value">${fDateTime(r.fechaCreacion)}</div></div>
@@ -572,6 +575,19 @@ function buildReporteAcciones(r) {
     return `<div class="action-bar"><div class="alert alert-success" style="margin:0;">Este reporte fue aprobado por el supervisor.</div></div>`;
   }
   return '';
+}
+
+/* ===== ENVIAR DESDE TABLA ===== */
+async function enviarSesionDirecta(idReporte) {
+  try {
+    await api.patch(`/reportes/${idReporte}/enviar`);
+    toast('Reporte enviado a revisión', 'success');
+    const exp = await api.get(`/expedientes/${expedienteActual.idExpediente}/detalle-terapeuta`);
+    expedienteActual = exp;
+    renderExpediente(exp, 'sesiones');
+  } catch (e) {
+    toast(e.message, 'error');
+  }
 }
 
 /* ===== ENVIAR REPORTE ===== */

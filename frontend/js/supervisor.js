@@ -87,7 +87,7 @@ function renderReportesItems(lista) {
       </div>
       <div class="patient-info" style="flex:1;">
         <div class="patient-name">${esc(r.nombreTerapeuta)}</div>
-        <div class="patient-meta">Reporte #${esc(r.idReporte)} · ${fDate(r.fechaSesion)}</div>
+        <div class="patient-meta">${folioRep(r.idReporte)} · ${fDate(r.fechaSesion)}</div>
       </div>
       <svg width="16" height="16" fill="none" stroke="#CBD5E1" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;">
         <polyline points="9 18 15 12 9 6"/>
@@ -130,7 +130,7 @@ function renderReporte(r) {
     <div class="card">
       <div class="card-header">
         <div>
-          <h2 style="font-size:1rem;font-weight:700;">Reporte #${esc(r.idDocumento)}</h2>
+          <h2 style="font-size:1rem;font-weight:700;">${folioRep(r.idDocumento)}</h2>
           <p style="font-size:0.8125rem;color:#64748B;margin-top:0.125rem;">${esc(r.nombrePaciente)} · ${fDate(r.fechaSesion)}</p>
         </div>
         <div style="display:flex;gap:0.5rem;align-items:center;">
@@ -143,7 +143,7 @@ function renderReporte(r) {
       </div>
       <div class="card-body">
         <div class="info-grid" style="margin-bottom:1.25rem;">
-          <div class="info-item"><div class="label">EXPEDIENTE</div><div class="value">#${esc(r.idExpediente)}</div></div>
+          <div class="info-item"><div class="label">EXPEDIENTE</div><div class="value">${folioExp(r.idExpediente)}</div></div>
           <div class="info-item"><div class="label">PACIENTE</div><div class="value">${esc(r.nombrePaciente)}</div></div>
           <div class="info-item"><div class="label">TERAPEUTA</div><div class="value">${esc(r.nombreTerapeuta)}</div></div>
           <div class="info-item"><div class="label">FECHA DE SESIÓN</div><div class="value">${fDate(r.fechaSesion)}</div></div>
@@ -201,7 +201,7 @@ async function aprobarReporte(idReporte) {
   setLoading(btn, true);
   try {
     const data = await api.patch(`/reportes/${idReporte}/aprobar`);
-    toast(`Reporte #${idReporte} aprobado`, 'success');
+    toast(`${folioRep(idReporte)} aprobado`, 'success');
     reporteActual = { ...reporteActual, estado: data.estado, fechaModificacion: data.fechaModificacion };
     renderReporte(reporteActual);
   } catch (e) {
@@ -234,7 +234,7 @@ document.getElementById('btnConfirmarRechazo').addEventListener('click', async (
     });
     closeModal('modalRechazar');
     setModalStatus('');
-    toast(`Reporte #${reporteIdParaRechazar} rechazado`, 'info');
+    toast(`${folioRep(reporteIdParaRechazar)} rechazado`, 'info');
     reporteActual = {
       ...reporteActual,
       estado: data.estado,

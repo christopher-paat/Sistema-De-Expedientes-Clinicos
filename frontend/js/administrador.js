@@ -3,16 +3,32 @@ let todosLosExpedientes = [];
 let expedienteActual = null;
 let usuariosLoaded = false;
 let filtroPendientes = false;
+let usuariosAuditoria = [];
+let usuarioAuditoriaId = null;
+let mapaUsuarios = new Map(); /* String(id) → nombreCompleto */
+/* INVARIANTE: mapaUsuarios debe llenarse vía cargarUsuariosParaAuditoria()
+   ANTES de que logsMaster tenga datos. Garantizado por el orden de eventos:
+   tab click → cargarUsuariosParaAuditoria() → (usuario busca) → buscarAuditoria() */
+let logsMaster = []; /* lista maestra; FilteredList equivalente */
 
 /* ===== INIT ===== */
 window.addEventListener('DOMContentLoaded', () => {
   initTabs('#adminTabs');
+  document.querySelectorAll('#tabAuditoria select').forEach(initCustomSelect);
+
+  /* Filtro dinámico: re-aplica predicado sobre logsMaster al escribir (FilteredList pattern) */
+  document.getElementById('aBuscarUsuario').addEventListener('input', function () {
+    if (logsMaster.length > 0) renderAuditoria(logsMaster);
+  });
 
   document.querySelectorAll('#adminTabs .tab').forEach(tab => {
     tab.addEventListener('click', () => {
       if (tab.dataset.tab === 'tabUsuarios' && !usuariosLoaded) {
         usuariosLoaded = true;
         loadUsuarios();
+      }
+      if (tab.dataset.tab === 'tabAuditoria' && usuariosAuditoria.length === 0) {
+        cargarUsuariosParaAuditoria();
       }
     });
   });
@@ -69,13 +85,15 @@ function renderListaPacientes(lista) {
         </div>
         <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
           <button onclick="toggleFiltroPendientes()" style="
-            display:flex;flex-direction:column;padding:0.3rem 0.75rem;gap:0.05rem;
+            display:inline-flex;align-items:center;gap:0.375rem;
+            height:36px;padding:0 0.75rem;
             border-radius:8px;border:1.5px solid ${filtroPendientes ? '#F59E0B' : '#FDE68A'};
             background:${filtroPendientes ? '#FEF3C7' : '#FFFBEB'};cursor:pointer;
-            font-family:inherit;text-align:left;transition:border-color 0.15s,background 0.15s;
+            font-family:inherit;font-size:0.8125rem;font-weight:600;color:#D97706;
+            transition:border-color 0.15s,background 0.15s;white-space:nowrap;
           ">
-            <span style="font-size:0.6875rem;font-weight:700;color:#D97706;letter-spacing:0.05em;">PENDIENTES</span>
-            <span style="font-size:1.125rem;font-weight:700;color:#D97706;line-height:1.2;">${pendientesCount}</span>
+            Pendientes
+            <span style="background:#D97706;color:white;border-radius:100px;font-size:0.6875rem;font-weight:700;padding:0.1rem 0.45rem;min-width:1.25rem;text-align:center;line-height:1.5;">${pendientesCount}</span>
           </button>
           <div style="position:relative;">
             <input
@@ -141,7 +159,7 @@ function renderPacientesItems(lista) {
       </div>
       <div class="patient-info" style="flex:1;">
         <div class="patient-name">${esc(nombre)}</div>
-        <div class="patient-meta">Exp. #${esc(r.idExpediente)} · ${esc(r.estado)}</div>
+        <div class="patient-meta">${folioExp(r.idExpediente)} · ${esc(r.estado)}</div>
       </div>
       ${pendiente ? `
       <span style="font-size:0.7rem;font-weight:600;color:#D97706;background:#FEF3C7;border-radius:100px;padding:0.2rem 0.625rem;white-space:nowrap;flex-shrink:0;">
@@ -192,7 +210,7 @@ function renderDetallePaciente(r) {
       <div class="card-header">
         <div>
           <h2 style="font-size:1rem;font-weight:700;">${esc(r.nombrePaciente)}</h2>
-          <p style="font-size:0.8125rem;color:#64748B;margin-top:0.125rem;">Expediente #${esc(r.idExpediente)}</p>
+          <p style="font-size:0.8125rem;color:#64748B;margin-top:0.125rem;">${folioExp(r.idExpediente)}</p>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="loadPacientes()">
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -203,7 +221,7 @@ function renderDetallePaciente(r) {
 
         <div class="info-grid" style="margin-bottom:1.25rem;">
           <div class="info-item"><div class="label">PACIENTE</div><div class="value">${esc(r.nombrePaciente)}</div></div>
-          <div class="info-item"><div class="label">EXPEDIENTE</div><div class="value">#${esc(r.idExpediente)}</div></div>
+          <div class="info-item"><div class="label">EXPEDIENTE</div><div class="value">${folioExp(r.idExpediente)}</div></div>
         </div>
 
         ${todoOk ? `
@@ -430,10 +448,48 @@ function renderUsuariosItems(lista, avatarBg, avatarColor) {
       </div>
       <div class="patient-info" style="flex:1;">
         <div class="patient-name">${esc(nombre)}</div>
-        <div class="patient-meta">ID: ${esc(id)}${correo ? ' · ' + esc(correo) : ''}</div>
+        <div class="patient-meta">${correo ? esc(correo) : ''}</div>
       </div>
     </div>`;
   }).join('');
+}
+
+/* ===== USUARIOS PARA AUDITORÍA (autocomplete) ===== */
+async function cargarUsuariosParaAuditoria() {
+  try {
+    const [terapeutas, supervisores] = await Promise.all([
+      api.get('/terapeutas'),
+      api.get('/supervisores'),
+    ]);
+    const todos = [
+      ...terapeutas.map(u => ({ id: u.idTerapeuta || u.id, nombre: u.nombreCompleto || u.nombre || '' })),
+      ...supervisores.map(u => ({ id: u.idSupervisor || u.id, nombre: u.nombreCompleto || u.nombre || '' })),
+    ].filter(u => u.id && u.nombre);
+
+    usuariosAuditoria = todos;
+
+    mapaUsuarios = new Map();
+    todos.forEach(u => mapaUsuarios.set(String(u.id), u.nombre));
+
+    const inputEl = document.getElementById('aBuscarUsuario');
+    const listEl  = document.getElementById('aBuscarUsuarioList');
+    if (inputEl && listEl) {
+      initAutocomplete(
+        inputEl,
+        listEl,
+        () => usuariosAuditoria.map(u => u.nombre),
+        (valor) => {
+          const match = usuariosAuditoria.find(
+            u => u.nombre.toLowerCase() === valor.trim().toLowerCase()
+          );
+          usuarioAuditoriaId = match ? match.id : null;
+          /* Al seleccionar del autocomplete, re-filtra la tabla en vivo */
+          if (logsMaster.length > 0) renderAuditoria(logsMaster);
+        },
+        2
+      );
+    }
+  } catch (_) { /* autocompletado no crítico */ }
 }
 
 /* ===== AUDITORÍA ===== */
@@ -442,19 +498,16 @@ document.getElementById('btnBuscarAuditoria').addEventListener('click', buscarAu
 async function buscarAuditoria() {
   const btn = document.getElementById('btnBuscarAuditoria');
 
-  const idUsuario  = document.getElementById('aIdUsuario').value.trim();
   const fechaDesde = document.getElementById('aFechaDesde').value;
   const fechaHasta = document.getElementById('aFechaHasta').value;
   const accion     = document.getElementById('aAccion').value;
-  const recurso    = document.getElementById('aRecurso').value.trim();
   const resultado  = document.getElementById('aResultado').value;
 
   let qs = '?';
-  if (idUsuario)  qs += `idUsuario=${idUsuario}&`;
+  if (usuarioAuditoriaId) qs += `idUsuario=${usuarioAuditoriaId}&`;
   if (fechaDesde) qs += `fechaDesde=${encodeURIComponent(new Date(fechaDesde).toISOString())}&`;
   if (fechaHasta) qs += `fechaHasta=${encodeURIComponent(new Date(fechaHasta).toISOString())}&`;
   if (accion)     qs += `accion=${encodeURIComponent(accion)}&`;
-  if (recurso)    qs += `recurso=${encodeURIComponent(recurso)}&`;
   if (resultado)  qs += `resultado=${encodeURIComponent(resultado)}&`;
 
   setLoading(btn, true);
@@ -463,8 +516,8 @@ async function buscarAuditoria() {
 
   try {
     const data = await api.get(`/auditoria${qs}`);
+    logsMaster = data; /* persiste la lista maestra para filtrado dinámico posterior */
     renderAuditoria(data);
-    if (countEl) countEl.textContent = `${data.length} resultado(s)`;
     toast(`${data.length} registro(s) encontrados`, 'success');
   } catch (e) {
     toast(e.message, 'error');
@@ -477,36 +530,49 @@ async function buscarAuditoria() {
 
 function renderAuditoria(lista) {
   const el = document.getElementById('auditoriaResultado');
+  const textoBusqueda = removerTildes((document.getElementById('aBuscarUsuario')?.value || '').trim()).toLowerCase();
 
-  if (lista.length === 0) {
+  let visible = mapaUsuarios.size > 0
+    ? lista.filter(l => mapaUsuarios.has(String(l.idUsuario)))
+    : lista;
+
+  if (textoBusqueda) {
+    visible = visible.filter(l => {
+      const nombreLimpio = removerTildes(mapaUsuarios.get(String(l.idUsuario)) || '').toLowerCase();
+      return nombreLimpio.includes(textoBusqueda);
+    });
+  }
+
+  const countEl = document.getElementById('countAuditoria');
+  if (countEl) countEl.textContent = visible.length > 0 ? `${visible.length} resultado(s)` : '';
+
+  if (visible.length === 0) {
     el.innerHTML = `<div class="empty-state" style="padding:2rem;"><p>No se encontraron registros con esos filtros</p></div>`;
     return;
   }
 
-  const rows = lista.map(l => `
+  const rows = visible.map(l => {
+    const nombreMostrar = mapaUsuarios.get(String(l.idUsuario)) || '—';
+    return `
     <tr>
-      <td>${esc(l.idLog)}</td>
-      <td>${esc(l.idUsuario)}</td>
-      <td><code style="font-size:0.75rem;">${esc(l.rolUsuario)}</code></td>
-      <td style="font-size:0.8125rem;white-space:nowrap;">${esc(l.accion)}</td>
-      <td>${esc(l.recurso)}${l.idRecurso ? ` <span style="color:#94A3B8;">#${esc(l.idRecurso)}</span>` : ''}</td>
-      <td style="white-space:nowrap;font-size:0.8125rem;">${fDateTime(l.fechaHora)}</td>
-      <td>${badge(l.resultado)}</td>
-    </tr>
-  `).join('');
+      <td>${esc(nombreMostrar)}</td>
+      <td style="text-align:center;"><code style="font-size:0.75rem;">${esc(l.rolUsuario)}</code></td>
+      <td>${esc(l.accion)}</td>
+      <td style="text-align:center;white-space:nowrap;">${fDateTime(l.fechaHora)}</td>
+      <td style="text-align:center;">${badge(l.resultado)}</td>
+    </tr>`;
+  }).join('');
 
   el.innerHTML = `
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>ID Log</th>
             <th>Usuario</th>
-            <th>Rol</th>
-            <th>Accion</th>
-            <th>Recurso</th>
-            <th>Fecha / Hora</th>
-            <th>Resultado</th>
+            <th style="text-align:center;">Rol</th>
+            <th>Acción</th>
+            <th style="text-align:center;">Fecha / Hora</th>
+            <th style="text-align:center;">Resultado</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
